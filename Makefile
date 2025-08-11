@@ -1,6 +1,6 @@
 NAME = webserv
 
-SRCS = main.cpp
+SRCS = main.cpp webserv.cpp
 
 FLAGS = -Wall -Werror -Wextra -g -std=c++98
 CC = c++
