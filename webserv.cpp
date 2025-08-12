@@ -6,11 +6,11 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:43 by safandri          #+#    #+#             */
-/*   Updated: 2025/08/11 16:39:13 by safandri         ###   ########.fr       */
+/*   Updated: 2025/08/12 16:18:18 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "webserv.h"
+#include "webserv.hpp"
 
 webserv::~webserv(){}
 
@@ -53,35 +53,6 @@ void	webserv::serv_listn()
 		serv_error("Connection failed !");
 }
 
-void	webserv::pars_request()
-{
-	char		request_buffer[1024];
-
-	memset(request_buffer, 0, sizeof(request_buffer));
-	read(client_fd, request_buffer, sizeof(request_buffer) - 1);
-	
-	std::string str = request_buffer;
-	size_t		line_end;
-	std::string	line;
-
-
-
-	line_end = str.find('\n');
-	while (line_end != std::string::npos)
-	{
-		line = str.substr(0, line_end);
-		std::cout << line_end << line << std::endl;
-
-		str = str.substr(line_end + 1, str.size());
-		line_end = str.find('\n');
-		if (line_end == std::string::npos)
-		{
-			std::cout << str << std::endl;
-			break;
-		}
-	}	
-}
-
 void	webserv::send_response()
 {
 	const char* http_response =
@@ -89,8 +60,7 @@ void	webserv::send_response()
 		"Content-Type: text/html\r\n"
 		"Content-Length: 100\r\n"
 		"\r\n"
-		"<h1>Hello, world!</h1>";
-
+		"<h1>!</h1>";
 	write(client_fd, http_response, strlen(http_response));
 }
 
@@ -99,3 +69,18 @@ void	webserv::end_conex()
 	close(client_fd);
 	close(server_fd);
 }
+
+void	webserv::pars_request()
+{
+	char		request_buffer[1024];
+	std::string	str;
+
+	memset(request_buffer, 0, sizeof(request_buffer));
+	read(client_fd, request_buffer, sizeof(request_buffer) - 1);
+	str = request_buffer;
+	std::cout << str << std::endl << std::endl;
+	parsString(str, request);
+	// print_map(request);
+}
+
+
