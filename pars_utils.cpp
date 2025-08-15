@@ -6,7 +6,7 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/12 15:38:26 by safandri          #+#    #+#             */
-/*   Updated: 2025/08/12 16:21:55 by safandri         ###   ########.fr       */
+/*   Updated: 2025/08/13 14:55:24 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,10 +32,15 @@ void	insertMap(std::string& line, std::map<std::string, std::string>& dict)
 
 	size_t	key_end = line.find(':');
 	if (key_end == std::string::npos)
+	{
+		key = line;
 		value = "";
+	}
 	else
+	{
+		key = line.substr(0, key_end);
 		value = line.substr(key_end + 1, line.size());
-	key = line.substr(0, key_end);
+	}
 	std::cout << key << " -> " << value << std::endl;
 	dict.insert(std::make_pair(key, value));
 }

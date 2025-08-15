@@ -2,7 +2,8 @@ NAME = webserv
 
 SRCS = main.cpp webserv.cpp pars_utils.cpp
 
-FLAGS = -Wall -Werror -Wextra -g -std=c++98
+FLAGS = -Wall -Werror -Wextra -g 
+# -std=c++98
 CC = c++
 
 OBJS = $(SRCS:.cpp=.o)

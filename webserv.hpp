@@ -6,21 +6,26 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:39 by safandri          #+#    #+#             */
-/*   Updated: 2025/08/12 16:21:03 by safandri         ###   ########.fr       */
+/*   Updated: 2025/08/13 16:32:35 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 
 #pragma once
 
-#include <iostream>
 #include <string>
 #include <cstring>
 #include <cstdlib>
-#include <unistd.h>
-#include <netinet/in.h>
 #include <map>
 #include <algorithm>
+
+#include <iostream>		// for cout/cerr
+#include <arpa/inet.h>	// for ip inet_pton()
+#include <netinet/in.h>	// for address
+#include <sys/select.h>	// for io multiplexing (select)
+#include <sys/socket.h>	// for socket
+#include <unistd.h> 	// for close()
+#include <vector>		// for storing client
 
 class webserv
 {
