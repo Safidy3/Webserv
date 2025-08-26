@@ -6,7 +6,7 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:39 by safandri          #+#    #+#             */
-/*   Updated: 2025/08/15 11:09:37 by safandri         ###   ########.fr       */
+/*   Updated: 2025/08/26 15:59:30 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,9 @@
 #include <sys/socket.h>	// for socket
 #include <unistd.h> 	// for close()
 #include <vector>		// for storing client
+
+#include <fcntl.h>		// for non-blocking fd
+#include <poll.h>		// for io multiplexing (poll)
 
 class webserv
 {

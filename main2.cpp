@@ -1,93 +1,104 @@
 
 #include "webserv.hpp"
 
+// Set fd to non-blocking mode
+void set_nonblocking(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		flags = 0;
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+void	remove_client(std::vector<pollfd> fds, int index)
+{
+	close(fds[index].fd);
+	fds.erase(fds.begin() + index);
+}
+
 int main()
 {
-	int					server_fd, new_fd;
-	struct sockaddr_in	server_addr;
-	fd_set				master_set, read_set;
-	int					fd_max;
-	char				buffer[1024];
-
-	// 1. Create socket
-	server_fd = socket(AF_INET, SOCK_STREAM, 0);
+	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0)
 	{
 		std::cerr << "Socket creation failed\n";
 		return 1;
 	}
+	set_nonblocking(server_fd);
 
-	// Allow reuse of port
 	int opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-	// 2. Binds the socket to 0.0.0.0:8080, allowing connections on that port.
+	sockaddr_in server_addr{};
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_port = htons(8080);
-	bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
-
-	// 3. Listen for incoming connections, max of 10
+	bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr));
 	listen(server_fd, 10);
+
 	std::cout << "Server running on port 8080...\n";
 
-	// Initialize fd sets
-	FD_ZERO(&master_set);
-	FD_SET(server_fd, &master_set);
-	fd_max = server_fd;
+	std::vector<pollfd> fds;
+	fds.push_back({server_fd, POLLIN, 0});
 
 	while (true)
 	{
-		read_set = master_set; // copy
-		if (select(fd_max + 1, &read_set, NULL, NULL, NULL) < 0)
+		int ready;
+
+		ready = poll(fds.data(), fds.size(), -1);
+		if (ready < 0)
 		{
-			std::cerr << "select() error\n";
+			perror("poll");
 			break;
 		}
-		// Loop through all fds
-		for (int fd = 0; fd <= fd_max; fd++)
+
+		for (size_t i = 0; i < fds.size(); ++i)
 		{
-			if (FD_ISSET(fd, &read_set))
+			if (fds[i].revents & POLLIN)
 			{
-				if (fd == server_fd)
+				// Check for new client
+				if (fds[i].fd == server_fd)
 				{
-					// New connection
+					int new_fd;
+
 					new_fd = accept(server_fd, NULL, NULL);
 					if (new_fd >= 0)
 					{
-						FD_SET(new_fd, &master_set);
-						if (new_fd > fd_max) fd_max = new_fd;
-						std::cout << "New client connected: FD " << new_fd << "\n";
+						set_nonblocking(new_fd);
+						fds.push_back({new_fd, POLLIN, 0});
+						std::cout << "New client FD: " << new_fd << "\n";
 					}
 				}
+				// Check for existing client data
 				else
 				{
-					memset(buffer, 0, sizeof(buffer));
-					int bytes_read = read(fd, buffer, sizeof(buffer) - 1);
-					if (bytes_read <= 0)
+					char	data_buffer[1024];
+					int		bytes_read;
+
+					memset(data_buffer, 0, sizeof(data_buffer));
+					bytes_read = read(fds[i].fd, data_buffer, sizeof(data_buffer) - 1);
+					if (bytes_read > 0)
 					{
-						std::cout << "Client disconnected: FD " << fd << "\n";
-						close(fd);
-						FD_CLR(fd, &master_set);
-					}
-					else
-					{
-						std::cout << "Request from FD " << fd << ":\n" << buffer << "\n";
-						// Send simple HTTP response
-						const char* http_response =
+						const char* response =
 							"HTTP/1.1 200 OK\r\n"
-							"Content-Type: text/plain\r\n"
-							"Content-Length: 12\r\n"
+							"Content-Type: text/html\r\n"
+							"Content-Length: 15\r\n"
 							"\r\n"
-							"<h1>hello worlds!</h1>";
-						write(fd, http_response, strlen(http_response));
-						close(fd); // Close after response (HTTP/1.0 style)
-						FD_CLR(fd, &master_set);
+							"<h1>hello world!</h1>";
+						write(fds[i].fd, response, strlen(response));
+					}
+					else if (bytes_read == 0)
+					{
+						// connection closed by peer
+						std::cout << "Client "<< fds[i].fd << " disconected !\n";
+						remove_client(fds, i);
+						--i; // Adjust index after erasing
 					}
 				}
 			}
 		}
 	}
+
 	close(server_fd);
 	return 0;
 }
