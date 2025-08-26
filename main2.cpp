@@ -21,13 +21,13 @@ int main()
 	int opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-	// 2. Bind
+	// 2. Binds the socket to 0.0.0.0:8080, allowing connections on that port.
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_port = htons(8080);
 	bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
 
-	// 3. Listen
+	// 3. Listen for incoming connections, max of 10
 	listen(server_fd, 10);
 	std::cout << "Server running on port 8080...\n";
 
