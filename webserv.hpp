@@ -6,7 +6,7 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:39 by safandri          #+#    #+#             */
-/*   Updated: 2025/08/27 14:53:27 by safandri         ###   ########.fr       */
+/*   Updated: 2025/08/29 11:22:55 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,9 @@
 #include <unistd.h> 	// for close()
 #include <vector>		// for storing client
 
+#include <sstream>		// for float to string
+#include <fstream>		// for static_file manipulation
+#include <sys/stat.h>	// for stat()
 #include <fcntl.h>		// for non-blocking fd
 #include <poll.h>		// for io multiplexing (poll)
 

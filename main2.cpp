@@ -1,7 +1,6 @@
 
 #include "webserv.hpp"
 
-// Set fd to non-blocking mode
 void set_nonblocking(int fd)
 {
 	int flags = fcntl(fd, F_GETFL, 0);
@@ -29,16 +28,31 @@ void	add_new_client(std::vector<pollfd>& pool_fds, int new_client_fd)
 	std::cout << "New client FD: " << new_client_fd << "\n";
 }
 
+/*
+	AF_INET		: IPv4 protocol family.
+	SOCK_STREAM	: TCP type socket.
+
+	SOL_SOCKET				: Level You're setting a socket-level option
+	SO_REUSEADDR 			: Option name, the specific option to enable address reuse
+	Pointer to value (1)	: Enables the option
+	Size of the value		: Tells how many bytes are in opt
+
+	enables the SO_REUSEADDR option on a socket :
+		Allow this socket to bind to a port immediately even if a previous connection on that port is still in TIME_WAIT state.
+	When a server program closes a socket, the port may go into a TIME_WAIT state — meaning it can't be reused for a short time
+
+	sockaddr_in	: data type that is used to store the address of the socket.
+	INADDR_ANY	: used when we don't want to bind our socket to any particular
+		IP and instead make it listen to all the available IPs.
+	htons()		: convert the unsigned int from machine byte order to network byte order.
+*/
+
 int	add_server(std::vector<pollfd>& pool_fds, int port, int max_con)
 {
 	int					server_fd;
 	int					opt;
 	struct sockaddr_in	server_addr;
 
-	/*
-		AF_INET		: IPv4 protocol family.
-		SOCK_STREAM	: TCP type socket.
-	*/
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0)
 	{
@@ -47,33 +61,14 @@ int	add_server(std::vector<pollfd>& pool_fds, int port, int max_con)
 	}
 	set_nonblocking(server_fd);
 
-	/*
-		SOL_SOCKET				: Level You're setting a socket-level option
-		SO_REUSEADDR 			: Option name, the specific option to enable address reuse
-		Pointer to value (1)	: Enables the option
-		Size of the value		: Tells how many bytes are in opt
-
-		enables the SO_REUSEADDR option on a socket :
-			Allow this socket to bind to a port immediately even if a previous connection on that port is still in TIME_WAIT state.
-		When a server program closes a socket, the port may go into a TIME_WAIT state — meaning it can't be reused for a short time
-	*/
 	opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-	/*
-		sockaddr_in	: data type that is used to store the address of the socket.
-		INADDR_ANY	: used when we don't want to bind our socket to any particular
-			IP and instead make it listen to all the available IPs.
-		htons()		: convert the unsigned int from machine byte order to network byte order.
-	*/
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_port = htons(port);
 	bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr));
 
-
 	pollfd	new_serv;
-
 	new_serv.fd = server_fd;
 	new_serv.events = POLLIN;
 	new_serv.revents = 0;
@@ -84,16 +79,35 @@ int	add_server(std::vector<pollfd>& pool_fds, int port, int max_con)
 	return (server_fd);
 }
 
+
+std::string float_to_str(float f)
+{
+    std::stringstream s;
+    s << f;
+    return s.str();
+}
+
+/*
+	struct pollfd
+	{
+		int   fd;         file descriptor
+		short events;     requested events : a bit mask specifying the events the application is interested in
+		short revents;    returned events : filled by the kernel with the events that actually occurred
+	};
+
+	poll(struct pollfd *clients_fds, nfds_t nfds, int timeout) :
+		waits for one an array of file descriptors to become ready to perform I/O.
+
+	- timeout :
+		specifies the number of milliseconds that poll() should block waiting for a file descriptor to become ready.
+
+	The call will block until either:
+		•  a file descriptor becomes ready;
+		•  the call is interrupted by a signal handler; or
+		•  the timeout expires.
+*/
 int main()
 {
-	/*
-		struct pollfd
-		{
-			int   fd;         file descriptor
-			short events;     requested events : a bit mask specifying the events the application is interested in
-			short revents;    returned events : filled by the kernel with the events that actually occurred
-		};
-	*/
 	std::vector<pollfd>		pool_fds;
 	std::vector<int>		servers_fds;
 
@@ -106,19 +120,6 @@ int main()
 	servers_fds.push_back(serv_fd);
 	while (true)
 	{
-		/*
-			poll(struct pollfd *clients_fds, nfds_t nfds, int timeout) :
-				waits for one an array of file descriptors to become ready to perform I/O.
-
-			- timeout :
-				specifies the number of milliseconds that poll() should block waiting for a file descriptor to become ready.
-
-			The call will block until either:
-				•  a file descriptor becomes ready;
-				•  the call is interrupted by a signal handler; or
-				•  the timeout expires.
-		*/
-
 		int	ready = poll(pool_fds.data(), pool_fds.size(), -1);
 		if (ready < 0)
 		{
@@ -154,17 +155,30 @@ int main()
 					bytes_read = read(client.fd, data_buffer, sizeof(data_buffer) - 1);
 					if (bytes_read > 0)
 					{
-						const char* response =
-							"HTTP/1.0 200 OK\r\n"
-							"Content-Type: text/html\r\n"
-							"Content-Length: 22\r\n"
-							"Connection: close\r\n"
-							"\r\n"
-							"<h1>hello world!</h1>";
-						write(client.fd, response, strlen(response));
-						// close(client.fd);
-						// remove_client(pool_fds, i);
-						// --i;
+						struct stat	st;
+						const char	*path = "./satic/index.html";
+						if (stat(path, &st) == 0)
+						{
+							std::string response = 
+								"HTTP/1.0 200 OK\r\n"
+								"Content-Type: text/html\r\n"
+								"Content-Length: " + float_to_str(st.st_size) + "\r\n"
+								"Connection: close\r\n\r\n";
+							send(client.fd, response.c_str(), response.length(), 0);
+
+							std::ifstream file(path); // Open the file
+							if (file.is_open())
+							{
+								while (std::getline(file, response))
+									send(client.fd, response.c_str(), sizeof(response), 0);
+								file.close();
+							}
+							else
+								std::cerr << "Unable to open file" << std::endl;
+							// write(client.fd, response, strlen(response));
+						}
+						else
+							std::cerr << "Faild to open ./satic/index.html\n";
 					}
 					else if (bytes_read == 0)
 					{
