@@ -145,40 +145,119 @@ int main()
 			}
 			else
 			{
-				pollfd	&client = pool_fds[i];
-				if (client.revents & POLLIN)
+				pollfd	&client = pool_fds[i];if (client.revents & POLLIN)
 				{
 					char	data_buffer[1024];
-					int		bytes_read;
-					memset(data_buffer, 0, sizeof(data_buffer));
-
-					bytes_read = read(client.fd, data_buffer, sizeof(data_buffer) - 1);
+					int		bytes_read = read(client.fd, data_buffer, sizeof(data_buffer) - 1);
 					if (bytes_read > 0)
 					{
+						const char*	path = "./static/index.html";
 						struct stat	st;
-						const char	*path = "./satic/index.html";
-						if (stat(path, &st) == 0)
+						if (stat(path, &st) != 0)
 						{
-							std::string response = 
-								"HTTP/1.0 200 OK\r\n"
-								"Content-Type: text/html\r\n"
-								"Content-Length: " + float_to_str(st.st_size) + "\r\n"
-								"Connection: close\r\n\r\n";
-							send(client.fd, response.c_str(), response.length(), 0);
-
-							std::ifstream file(path); // Open the file
-							if (file.is_open())
-							{
-								while (std::getline(file, response))
-									send(client.fd, response.c_str(), sizeof(response), 0);
-								file.close();
-							}
-							else
-								std::cerr << "Unable to open file" << std::endl;
-							// write(client.fd, response, strlen(response));
+							// send 404
+							const char* notfound = "HTTP/1.0 404 Not Found\r\nContent-Length: 9\r\nConnection: close\r\n\r\nNot Found";
+							send(client.fd, notfound, strlen(notfound), 0);
+							shutdown(client.fd, SHUT_WR);
+							remove_client(pool_fds, i); --i;
+							continue;
 						}
-						else
-							std::cerr << "Faild to open ./satic/index.html\n";
+
+						std::ifstream file(path, std::ios::binary);
+						if (!file.is_open())
+						{
+							const char* err = "HTTP/1.0 500 Internal Server Error\r\nContent-Length: 5\r\nConnection: close\r\n\r\nError";
+							send(client.fd, err, strlen(err), 0);
+							shutdown(client.fd, SHUT_WR);
+							remove_client(pool_fds, i); --i;
+							continue;
+						}
+
+						std::string header =
+							"HTTP/1.0 200 OK\r\n"
+							"Content-Type: text/html\r\n"
+							"Content-Length: " + float_to_str(st.st_size) + "\r\n"
+							"Connection: close\r\n\r\n";
+
+						// send header (handle partial send)
+						const char*	hdr_ptr = header.data();
+						size_t		hdr_left = header.size();
+
+						while (hdr_left > 0)
+						{
+							ssize_t n = send(client.fd, hdr_ptr, hdr_left, 0);
+							if (n > 0)
+							{
+								hdr_ptr += n;
+								hdr_left -= n;
+								continue;
+							}
+							if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+							{
+								pollfd p;
+								p.fd = client.fd;
+								p.events = POLLOUT;
+								p.revents = 0;
+								poll(&p, 1, -1);
+								continue;
+							}
+							// error -> close
+							file.close();
+							shutdown(client.fd, SHUT_WR);
+							remove_client(pool_fds, i); --i;
+							goto continue_outer_loop;
+						}
+
+						// send file in chunks using send()
+						const size_t		CHUNK = 1024;
+						std::vector<char>	buf(CHUNK);
+
+						size_t remaining = st.st_size;
+						while (remaining > 0 && file)
+						{
+							size_t			to_read;
+							std::streamsize r;
+							const char*		ptr;
+							
+							to_read = std::min(CHUNK, remaining);
+							file.read(buf.data(), to_read);
+							r = file.gcount();
+							if (r <= 0)
+								break;
+
+							ptr = buf.data();
+							size_t left = (size_t)r;
+							while (left > 0)
+							{
+								ssize_t s = send(client.fd, ptr, left, 0);
+								if (s > 0)
+								{
+									ptr += s;
+									left -= s;
+									remaining -= s;
+									continue;
+								}
+								if (s == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+								{
+									pollfd p;
+									p.fd = client.fd;
+									p.events = POLLOUT;
+									p.revents = 0;
+									poll(&p, 1, -1);
+									continue;
+								}
+								// error
+								file.close();
+								shutdown(client.fd, SHUT_WR);
+								remove_client(pool_fds, i); --i;
+								goto continue_outer_loop;
+							}
+						}
+						// done: close connection and remove client
+						file.close();
+						shutdown(client.fd, SHUT_WR);
+						remove_client(pool_fds, i);
+						--i;
 					}
 					else if (bytes_read == 0)
 					{
@@ -187,6 +266,7 @@ int main()
 						--i;
 					}
 				}
+				continue_outer_loop: ; // label target for goto cleanup
 			}
 		}
 	}
