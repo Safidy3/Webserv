@@ -33,6 +33,50 @@
 #include <fcntl.h>		// for non-blocking fd
 #include <poll.h>		// for io multiplexing (poll)
 
+struct ServerConfig
+{
+	std::string root;
+	std::string index;
+	std::string error_page;
+	std::vector<std::string> methods;
+	std::string cgi_path;
+};
+
+struct HttpRequest
+{
+	std::string method;
+	std::string path;
+	std::string version;
+	std::string body;
+	std::map<std::string, std::string> headers;
+
+	// Helper method to get header value (case-insensitive)
+	std::string getHeader(const std::string &name) const
+	{
+		for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
+		{
+			// Manual case-insensitive comparison (since strcasecmp is not standard C++)
+			const std::string &a = it->first;
+			const std::string &b = name;
+			if (a.size() == b.size())
+			{
+				bool equal = true;
+				for (size_t i = 0; i < a.size(); ++i)
+				{
+					if (tolower(a[i]) != tolower(b[i]))
+					{
+						equal = false;
+						break;
+					}
+				}
+				if (equal)
+					return it->second;
+			}
+		}
+		return "";
+	}
+};
+
 class webserv
 {
 	private:
@@ -54,8 +98,12 @@ class webserv
 
 void	parsString(std::string& str, std::map<std::string, std::string>& dict);
 void	insertMap(std::string& line, std::map<std::string, std::string>& dict);
+bool	isAllSpace(const std::string& str);
 void	print_map(std::map<std::string, std::string>& dict);
 
+bool	parseHttpRequest(const char *rawRequest, HttpRequest &request);
+
+void	set_nonblocking(int fd);
 
 
 
@@ -65,4 +113,4 @@ void	print_map(std::map<std::string, std::string>& dict);
 
 
 
-
+	
