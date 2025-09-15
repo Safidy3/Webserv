@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-
-#pragma once
+#ifndef WEBSERV_HPP
+#define WEBSERV_HPP
 
 #include <string>
 #include <cstring>
@@ -42,6 +42,14 @@ struct ServerConfig_t
 	std::string cgi_path;
 };
 
+template <typename T>
+std::string toString(T value)
+{
+    std::ostringstream os;
+    os << value;
+    return os.str();
+}
+
 class webserv
 {
 	private:
@@ -66,16 +74,9 @@ void	insertMap(std::string& line, std::map<std::string, std::string>& dict);
 bool	isAllSpace(const std::string& str);
 void	print_map(std::map<std::string, std::string>& dict);
 
+void set_nonblocking(int fd);
 // bool	parseHttpRequest(const char *rawRequest, HttpRequest &request);
 
-void	set_nonblocking(int fd);
 
 
-
-
-
-
-
-
-
-	
+#endif

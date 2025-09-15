@@ -103,5 +103,3 @@ void	webserv::pars_request()
 	// parsString(str, request);
 	// print_map(request);
 }
-
-

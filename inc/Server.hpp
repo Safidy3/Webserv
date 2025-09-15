@@ -12,7 +12,6 @@ private:
 	struct sockaddr_in	_address;
 	ServerConfig_t		_config;
 	pollfd				_pollfd;
-	std::vector<int>	_clientSockets;
 
 public:
 	Server(ServerConfig_t config, int port = 8080, int max_con = 10);
@@ -36,6 +35,7 @@ Server::Server(ServerConfig_t config, int port, int max_con) :
 	_pollfd.events = POLLIN | POLLOUT;
 	_pollfd.revents = 0;
 	std::cout << "Server created on port " << _port << "\n";
+	init();
 }
 
 Server::~Server()

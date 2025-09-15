@@ -1,5 +1,5 @@
 
-#include "webserv.hpp"
+#include "include.hpp"
 
 void set_nonblocking(int fd)
 {
@@ -111,6 +111,8 @@ std::string float_to_str(float f)
 		•  the timeout expires.
 */
 
+
+/**/
 int main()
 {
 	std::vector<pollfd> pool_fds;
@@ -158,138 +160,23 @@ int main()
 					int bytes_read = read(client.fd, data_buffer, sizeof(data_buffer) - 1);
 					if (bytes_read > 0)
 					{
-						HttpRequest http_request;
-						if (parseHttpRequest(data_buffer, http_request))
+						HTTPRequest http_request(data_buffer);
+						if (http_request.getMethod() != "" && http_request.getPath() != "" && http_request.getVersion() != "")
 						{
-							// Now you can route based on method and path
-							if (http_request.method == "GET" && http_request.path == "/")
+							if (http_request.getMethod() == "GET" && http_request.getPath() == "/")
 							{
-								// Serve index.html
-								const char *path = "./static/index.html";
-								struct stat st;
-								if (stat(path, &st) != 0)
-								{
-									// send 404
-									const char *notfound = "HTTP/1.0 404 Not Found\r\nContent-Length: 9\r\nConnection: close\r\n\r\nNot Found";
-									send(client.fd, notfound, strlen(notfound), 0);
-									shutdown(client.fd, SHUT_WR);
-									remove_client(pool_fds, i);
-									--i;
-									continue;
-								}
-
-								std::ifstream file(path, std::ios::binary);
-								if (!file.is_open())
-								{
-									const char *err = "HTTP/1.0 500 Internal Server Error\r\nContent-Length: 5\r\nConnection: close\r\n\r\nError";
-									send(client.fd, err, strlen(err), 0);
-									shutdown(client.fd, SHUT_WR);
-									remove_client(pool_fds, i);
-									--i;
-									continue;
-								}
-
 								std::string header =
 									"HTTP/1.0 200 OK\r\n"
 									"Content-Type: text/html\r\n"
-									"Content-Length: " +
-									float_to_str(st.st_size) + "\r\nConnection: close\r\n\r\n";
-
-								// send header (handle partial send)
-								const char *hdr_ptr = header.data();
-								size_t hdr_left = header.size();
-
-								while (hdr_left > 0)
-								{
-									ssize_t n = send(client.fd, hdr_ptr, hdr_left, 0);
-									if (n > 0)
-									{
-										hdr_ptr += n;
-										hdr_left -= n;
-										continue;
-									}
-									if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
-									{
-										pollfd p;
-										p.fd = client.fd;
-										p.events = POLLOUT;
-										p.revents = 0;
-										poll(&p, 1, -1);
-										continue;
-									}
-									// error -> close
-									file.close();
-									shutdown(client.fd, SHUT_WR);
-									remove_client(pool_fds, i);
-									--i;
-									goto continue_outer_loop;
-								}
-
-								// send file in chunks using send()
-								const size_t CHUNK = 1024;
-								std::vector<char> buf(CHUNK);
-
-								size_t remaining = st.st_size;
-								while (remaining > 0 && file)
-								{
-									size_t to_read;
-									std::streamsize r;
-									const char *ptr;
-
-									to_read = std::min(CHUNK, remaining);
-									file.read(buf.data(), to_read);
-									r = file.gcount();
-									if (r <= 0)
-										break;
-
-									ptr = buf.data();
-									size_t left = (size_t)r;
-									while (left > 0)
-									{
-										ssize_t s = send(client.fd, ptr, left, 0);
-										if (s > 0)
-										{
-											ptr += s;
-											left -= s;
-											remaining -= s;
-											continue;
-										}
-										if (s == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
-										{
-											pollfd p;
-											p.fd = client.fd;
-											p.events = POLLOUT;
-											p.revents = 0;
-											poll(&p, 1, -1);
-											continue;
-										}
-										// error
-										file.close();
-										shutdown(client.fd, SHUT_WR);
-										remove_client(pool_fds, i);
-										--i;
-										goto continue_outer_loop;
-									}
-								}
-								// done: close connection and remove client
-								file.close();
+									"Content-Length: 12\r\n"
+									"Connection: close\r\n\r\n"
+									"Hello World!";
+								send(client.fd, header.c_str(), header.size(), 0);
 								shutdown(client.fd, SHUT_WR);
 								remove_client(pool_fds, i);
 								--i;
 							}
-							// else if(http_request.method == "GET" && http_request.path == "/api/status")
-							// {
-							// 	// Serve API endpoint
-							// }
-							// else
-							// {
-							// 	// 404 Not Found
-							// }
 						}
-						// else
-						// {
-						// 	// Send 400 Bad Request
-						// }
 					}
 					else if (bytes_read == 0)
 					{
@@ -298,7 +185,6 @@ int main()
 						--i;
 					}
 				}
-				continue_outer_loop:; // label target for goto cleanup
 			}
 		}
 	}
@@ -308,3 +194,13 @@ int main()
 	return 0;
 }
 
+
+// int main()
+// {
+// 	ServerManager serverManager;
+
+// 	serverManager.addServer(8080, 10);
+
+// 	serverManager.pollEvents();
+	
+// }

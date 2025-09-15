@@ -13,7 +13,8 @@ private:
 	std::map<std::string, std::string> headers;
 
 public:
-	HTTPRequest(){};
+	HTTPRequest() : method(""), path(""), version(""), body(""), headers() {};
+	HTTPRequest(const char *raw) { parseHttpRequest(raw); }
 	~HTTPRequest(){};
 
 	std::string getMethod() const { return method; }
