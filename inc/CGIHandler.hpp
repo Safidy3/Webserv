@@ -10,8 +10,8 @@ public:
     CGIHandler();
     ~CGIHandler();
 
-    std::string execute(const HTTPRequest&, const ServerConfig&); // (fork(), execve(), pipes).
-    void        setEnv(const HTTPRequest&, const ServerConfig&);
+    std::string execute(const HTTPRequest&, const ServerConfig_t&); // (fork(), execve(), pipes).
+    void        setEnv(const HTTPRequest&, const ServerConfig_t&);
 };
 
 #endif

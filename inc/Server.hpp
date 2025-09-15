@@ -6,62 +6,88 @@
 class Server
 {
 private:
-	int					serv_fd;
-	int					serv_port;
-	struct sockaddr_in	serv_address;
-	ServerConfig		serv_config;
+	int					_fd;
+	int					_port;
+	int					_max_con;
+	struct sockaddr_in	_address;
+	ServerConfig_t		_config;
+	pollfd				_pollfd;
+	std::vector<int>	_clientSockets;
+
 public:
-	Server(ServerConfig config, int port = 8080);
+	Server(ServerConfig_t config, int port = 8080, int max_con = 10);
 	~Server();
+
+	void			stop();
 
 	bool			init(); // → socket(), bind(), listen().
 	int				getSocket() const;
-	ServerConfig&	getConfig();
+	pollfd&			getPollFD();
+	ServerConfig_t&	getConfig();
 };
 
-Server::Server(ServerConfig config, int port) :
-	serv_fd(-1),
-	serv_port(port),
-	serv_config(config)
+Server::Server(ServerConfig_t config, int port, int max_con) :
+	_fd(-1),
+	_port(port),
+	_max_con(max_con),
+	_config(config)	
 {
-	std::cout << "Server created on port " << serv_port << "\n";
+	_pollfd.fd = _fd;
+	_pollfd.events = POLLIN | POLLOUT;
+	_pollfd.revents = 0;
+	std::cout << "Server created on port " << _port << "\n";
 }
 
 Server::~Server()
 {
-	if (serv_fd != -1)
-		close(serv_fd);
-	std::cout << "Server on port " << serv_port << " closed\n";
+	if (_fd != -1)
+		close(_fd);
+	std::cout << "Server on port " << _port << " closed\n";
 }
 
 bool	Server::init()
 {
 	// Initialize server socket, bind, and listen
-	serv_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (serv_fd < 0)
+	_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (_fd < 0)
 		return (std::cerr << "Socket creation failed\n", false);
-	set_nonblocking(serv_fd);
+	set_nonblocking(_fd);
 
 	int opt = 1;
-	setsockopt(serv_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-	serv_address.sin_family = AF_INET;
-	serv_address.sin_addr.s_addr = INADDR_ANY;
-	serv_address.sin_port = htons(serv_port);
-	if (bind(serv_fd, (sockaddr *)&serv_address, sizeof(serv_address)) < 0)
+	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	_address.sin_family = AF_INET;
+	_address.sin_addr.s_addr = INADDR_ANY;
+	_address.sin_port = htons(_port);
+	if (bind(_fd, (sockaddr *)&_address, sizeof(_address)) < 0)
 		return (std::cerr << "Bind failed\n", false);
-	if (listen(serv_fd, SOMAXCONN) < 0)
+	if (listen(_fd, _max_con) < 0)
 		return (std::cerr << "Listen failed\n", false);
 	return true;
 }
 
-int	Server::getSocket() const
+void	Server::stop()
 {
-	return serv_fd;
+	if (_fd != -1)
+	{
+		close(_fd);
+		_fd = -1;
+		std::cout << "Server on port " << _port << " stopped\n";
+	}
 }
 
-ServerConfig&	Server::getConfig()
+int	Server::getSocket() const
 {
-	return serv_config;
+	return _fd;
+}
+
+ServerConfig_t&	Server::getConfig()
+{
+	return _config;
+}
+
+pollfd&	Server::getPollFD()
+{
+	return _pollfd;
 }
 
 #endif

@@ -13,13 +13,19 @@ private:
 	std::map<std::string, std::string> headers;
 
 public:
-	HTTPRequest();
-	~HTTPRequest();
+	HTTPRequest(){};
+	~HTTPRequest(){};
+
+	std::string getMethod() const { return method; }
+	std::string getPath() const { return path; }
+	std::string getVersion() const { return version; }
+	std::string getBody() const { return body; }
+	std::map<std::string, std::string> getHeaders() const { return headers; }
 
 	bool	parseHttpRequest(const char *raw);
-	bool	isComplete(); // (check if full request is received)
-	size_t	getContentLength();
-	void	printRequest(const HttpRequest &req);
+	void	printRequest();
+	// bool	isComplete(); // (check if full request is received)
+	// size_t	getContentLength();
 };
 
 // Utility function to trim whitespace
@@ -113,16 +119,16 @@ bool	HTTPRequest::parseHttpRequest(const char *Request)
 }
 
 // Example usage function
-void	HTTPRequest::printRequest(const HttpRequest &req)
+void	HTTPRequest::printRequest()
 {
-	std::cout << "Method: " << req.method << std::endl;
-	std::cout << "Path: " << req.path << std::endl;
-	std::cout << "Version: " << req.version << std::endl;
+	std::cout << "Method: " << method << std::endl;
+	std::cout << "Path: " << path << std::endl;
+	std::cout << "Version: " << version << std::endl;
 	std::cout << "Headers:" << std::endl;
-	for (std::map<std::string, std::string>::const_iterator it = req.headers.begin(); it != req.headers.end(); ++it)
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
 		std::cout << "  " << it->first << ": " << it->second << std::endl;
-	if (!req.body.empty())
-		std::cout << "Body: " << req.body << std::endl;
+	if (!body.empty())
+		std::cout << "Body: " << body << std::endl;
 }
 
 

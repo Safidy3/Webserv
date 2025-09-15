@@ -10,9 +10,9 @@ public:
 	Router();
 	~Router();
 
-	std::string	resolvePath(const HTTPRequest&, const ServerConfig&);
-	bool		methodAllowed(const HTTPRequest&, const ServerConfig&);
-	bool		isCGI(const HTTPRequest&, const ServerConfig&);
+	std::string	resolvePath(const HTTPRequest&, const ServerConfig_t&);
+	bool		methodAllowed(const HTTPRequest&, const ServerConfig_t&);
+	bool		isCGI(const HTTPRequest&, const ServerConfig_t&);
 };
 
 #endif

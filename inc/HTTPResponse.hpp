@@ -11,8 +11,8 @@ private:
 	std::map<std::string, std::string>	headers;
 
 public:
-	HTTPResponse();
-	~HTTPResponse();
+	HTTPResponse(){};
+	~HTTPResponse(){};
 
 	void		setStatus(int code);
 	void		setHeader(const std::string&, const std::string&);
