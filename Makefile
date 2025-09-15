@@ -1,6 +1,6 @@
 NAME = webserv
 
-SRCS = main2.cpp request_parser.cpp webserv.cpp pars_utils.cpp
+SRCS = main2.cpp webserv.cpp
 
 FLAGS = -Wall -Werror -Wextra -g -std=c++98
 
@@ -25,6 +25,9 @@ fclean: clean
 re: fclean all
 
 run: all
+	@./$(NAME)
+
+runre: re
 	@./$(NAME)
 
 debug: all

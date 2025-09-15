@@ -32,29 +32,34 @@ public:
 	void    removeServer(int server_fd);
 	void    addClient(int client_fd);
 	void    removeClient(int client_fd);
+	
 	void    pollEvents();
+	int		handleIncomingClient(Server* server, pollfd& poll_fd, int fd);
+	void	handleClientSocket(Client* client, pollfd& poll_fd);
 
-	void	printPool() 
-	{
-		for (size_t i = 0; i < _poolFds.size(); ++i)
-		{
-			std::map<int, Server*>::iterator server_it = _serversMap.find(_poolFds[i].fd);
-			std::map<int, Client*>::iterator client_it = _clientsMap.find(_poolFds[i].fd);
-
-			if (server_it != _serversMap.end())
-				std::cout << "[Server] ";
-			else if (client_it != _clientsMap.end())
-				std::cout << "[Client] ";
-			else
-				std::cout << "[Unknown] ";
-			std::cout << "FD: " << _poolFds[i].fd 
-					  << " Events: " << _poolFds[i].events 
-					  << " Revents: " << _poolFds[i].revents << "\n";
-		}
-	}
+	void	printPool();
 };
 
-void ServerManager::addServer(int port, int max_con)
+void	ServerManager::printPool() 
+{
+	for (size_t i = 0; i < _poolFds.size(); ++i)
+	{
+		std::map<int, Server*>::iterator server_it = _serversMap.find(_poolFds[i].fd);
+		std::map<int, Client*>::iterator client_it = _clientsMap.find(_poolFds[i].fd);
+
+		if (server_it != _serversMap.end())
+			std::cout << "[Server] ";
+		else if (client_it != _clientsMap.end())
+			std::cout << "[Client] ";
+		else
+			std::cout << "[Unknown] ";
+		std::cout << "FD: " << _poolFds[i].fd 
+					<< " Events: " << _poolFds[i].events 
+					<< " Revents: " << _poolFds[i].revents << "\n";
+	}
+}
+
+void	ServerManager::addServer(int port, int max_con)
 {
 	Server* new_server = new Server(ServerConfig_t(), port, max_con);
 	if (!new_server->init())
@@ -67,8 +72,7 @@ void ServerManager::addServer(int port, int max_con)
 	_poolFds.push_back(new_server->getPollFD());
 	// std::cout << "Server added on port " << port << "\n";
 }
-
-void ServerManager::removeServer(int server_fd)
+void	ServerManager::removeServer(int server_fd)
 {
 	std::map<int, Server*>::iterator it = _serversMap.find(server_fd);
 	if (it != _serversMap.end())
@@ -90,8 +94,7 @@ void ServerManager::removeServer(int server_fd)
 	else
 		std::cerr << "Server fd " << server_fd << " not found\n";
 }
-
-void ServerManager::addClient(int client_fd)
+void	ServerManager::addClient(int client_fd)
 {
 	Client* new_client = new Client(client_fd);
 	if (new_client->getSocket() >= 0)
@@ -106,8 +109,7 @@ void ServerManager::addClient(int client_fd)
 		delete new_client;
 	}
 }
-
-void ServerManager::removeClient(int client_fd)
+void	ServerManager::removeClient(int client_fd)
 {
 	std::map<int, Client*>::iterator it = _clientsMap.find(client_fd);
 	if (it != _clientsMap.end())
@@ -129,6 +131,62 @@ void ServerManager::removeClient(int client_fd)
 	}
 	else
 		std::cerr << "Client fd " << client_fd << " not found\n";
+}
+
+int		ServerManager::handleIncomingClient(Server* server, pollfd& poll_fd, int fd)
+{
+	if (poll_fd.revents & POLLIN)
+	{
+		printPool();
+		int new_client_fd = accept(server->getSocket(), NULL, NULL);
+		if (new_client_fd < 0)
+		{
+			if (errno != EAGAIN && errno != EWOULDBLOCK)
+				std::cerr << "Error: accept failed (" << strerror(errno) << ")\n";
+			return (1);
+		}
+		addClient(new_client_fd);
+	}
+	if (poll_fd.revents & (POLLERR | POLLHUP | POLLNVAL))
+	{
+		std::cerr << "Error on server socket " << fd << "\n";
+		removeServer(fd);
+	}
+	return (0);
+}
+
+void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
+{
+	bool should_close = false;
+
+	if (poll_fd.revents & POLLIN)
+	{
+		ssize_t bytes_read = client->readData();
+		if (bytes_read <= 0)
+			should_close = true;
+		else
+		{
+			// Process client request and send response
+			HTTPResponse response;
+			response.setBody("<html><body><h1>Hello, World!</h1></body></html>");
+			response.setStatus(200);
+			response.setHeader("Content-Type", "text/html");
+			response.setHeader("Content-Length", toString(response.getBody().size()));
+			response.setHeader("Connection", "close");
+
+			if (client->sendData(response.toString()) < 0)
+				should_close = true;
+			else
+				should_close = true; // Close after sending response
+		}
+	}
+
+	if (poll_fd.revents & (POLLERR | POLLHUP | POLLNVAL))
+		should_close = true;
+	// No need to adjust index when iterating backwards
+	if (should_close)
+		removeClient(client->getSocket());
+
 }
 
 void ServerManager::pollEvents()
@@ -155,65 +213,22 @@ void ServerManager::pollEvents()
 			if (_poolFds[i].revents == 0)
 				continue; // No events for this fd
 
-			int fd = _poolFds[i].fd;
-
 			// Use safer map lookups
+			int fd = _poolFds[i].fd;
 			std::map<int, Server*>::iterator server_it = _serversMap.find(fd);
 			std::map<int, Client*>::iterator client_it = _clientsMap.find(fd);
-			
-			if (server_it != _serversMap.end()) // This is a server socket
+
+			// server socket
+			if (server_it != _serversMap.end())
 			{
-				Server* server = server_it->second;
-				if (_poolFds[i].revents & POLLIN)
-				{
-					printPool();
-					int new_client_fd = accept(server->getSocket(), NULL, NULL);
-					if (new_client_fd < 0)
-					{
-						if (errno != EAGAIN && errno != EWOULDBLOCK)
-							std::cerr << "Error: accept failed (" << strerror(errno) << ")\n";
-						continue;
-					}
-					addClient(new_client_fd);
-				}
-				if (_poolFds[i].revents & (POLLERR | POLLHUP | POLLNVAL))
-				{
-					std::cerr << "Error on server socket " << fd << "\n";
-					removeServer(fd);
-				}
+				if (handleIncomingClient(server_it->second, _poolFds[i], fd) == 1)
+					continue;
 			}
-			else if (client_it != _clientsMap.end()) // This is a client socket
+			// client socket
+			else if (client_it != _clientsMap.end())
 			{
 				Client* client = client_it->second;
-				bool should_close = false;
-				
-				if (_poolFds[i].revents & POLLIN)
-				{
-					ssize_t bytes_read = client->readData();
-					if (bytes_read <= 0)
-						should_close = true;
-					else
-					{
-						// Process client request and send response
-						HTTPResponse response;
-						response.setBody("<html><body><h1>Hello, World!</h1></body></html>");
-						response.setStatus(200);
-						response.setHeader("Content-Type", "text/html");
-						response.setHeader("Content-Length", toString(response.getBody().size()));
-						response.setHeader("Connection", "close");
-
-						if (client->sendData(response.toString()) < 0)
-							should_close = true;
-						else
-							should_close = true; // Close after sending response
-					}
-				}
-
-				if (_poolFds[i].revents & (POLLERR | POLLHUP | POLLNVAL))
-					should_close = true;
-				// No need to adjust index when iterating backwards
-				if (should_close)
-					removeClient(client->getSocket());
+				handleClientSocket(client, _poolFds[i]);
 			}
 			else
 			{
