@@ -8,110 +8,217 @@
 class Client
 {
 private:
-	int				_fd;
-	std::string		_buffer_in;
-	std::string		_buffer_out;
-	pollfd			_pollfd;
-	HTTPRequest		_request;
-	HTTPResponse	_response;
-	enum State { READING, WRITING, CLOSED } state;
+    int             _fd;
+    std::string     _buffer_in;
+    std::string     _buffer_out;
+    pollfd          _pollfd;
+    HTTPRequest     _request;
+    HTTPResponse    _response;
+    enum State { READING, WRITING, CLOSED } _state;
+    
 public:
-	Client(int fd);
-	~Client();
+    Client(int fd);
+    ~Client();
 
-	ssize_t	readData();
-	ssize_t	sendData(const std::string& response);
-	void	closeConnection();
+    ssize_t readData();
+    ssize_t sendData(const std::string& response);
+    void    closeConnection();
 
-	int				getSocket() const;
-	HTTPRequest&	getHTTPRequest();
-	pollfd&			getPollFD();
+    int             getSocket() const;
+    HTTPRequest&    getHTTPRequest();
+    pollfd&         getPollFD();
+    State           getState() const { return _state; }
+    void            setState(State state) { _state = state; }
 };
 
-Client::Client(int fd) : _fd(fd)
+Client::Client(int fd) : _fd(fd), _state(READING)
 {
-	set_nonblocking(_fd);
-	state = READING;
-	_pollfd.fd = _fd;
-	_pollfd.events = POLLIN;
-	_pollfd.revents = 0;
-
-	sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-	getpeername(_fd, (sockaddr *)&addr, &addrlen);
-	std::cout << "New client: " << inet_ntoa(addr.sin_addr) 
-				<< ":" << ntohs(addr.sin_port)
-				<< " FD: " << _fd << "\n";
-}
-
-/// Receive data from client socket
-/// - Reads into temp buffer using non-blocking recv()
-/// - Appends to internal _buffer
-/// - Stops on error or when less than buffer size received
-ssize_t Client::readData()
-{
-    char tempBuffer[8192];
-    this->_buffer_in.clear();
-    while (true)
-	{
-        // MSG_DONTWAIT ensures non-blocking mode of recv even if there is no data yet
-        // if there is no data, recv() will return -1 and errno will be EWOULDBLOCK or EAGAIN
-        ssize_t receivedDataLength = recv(this->_fd, tempBuffer, sizeof(tempBuffer) - 1, MSG_DONTWAIT);
-        // If recv returns 0 (connection closed) or -1 (error), stop reading
-        if (receivedDataLength <= 0) break;
-        // Null-terminate the buffer
-        tempBuffer[receivedDataLength] = '\0';
-        // Append received data to internal buffer
-        this->_buffer_in.append(tempBuffer, receivedDataLength);
-        // If less than full buffer was read — assume we're done for now
-        if (receivedDataLength < (ssize_t)(sizeof(tempBuffer) - 1)) break;
+    // Initialize pollfd first
+    _pollfd.fd = _fd;
+    _pollfd.events = POLLIN;
+    _pollfd.revents = 0;
+    
+    // Validate file descriptor
+    if (_fd < 0)
+    {
+        std::cerr << "Invalid file descriptor passed to Client constructor\n";
+        _state = CLOSED;
+        return;
     }
-	// _request.parseHttpRequest(this->_buffer_in.c_str());
-	if (!this->_buffer_in.empty())
-		_request.parseHttpRequest(this->_buffer_in.c_str());
-    return this->_buffer_in.size();
-}
 
-ssize_t	Client::sendData(const std::string& response)
-{
-    ssize_t sentDataLength = send(this->_fd, response.c_str(), response.size(), MSG_NOSIGNAL);
-    if (sentDataLength < 0)
-        std::cerr << "Error sending data to client" << std::endl;
-    else if (sentDataLength == 0)
-        std::cerr << "Warning: send() returned 0, no data was sent." << std::endl;
+    // Set non-blocking mode
+    set_nonblocking(_fd);
+    
+    // Get client address info (with error handling)
+    sockaddr_in addr;
+    socklen_t addrlen = sizeof(addr);
+    memset(&addr, 0, sizeof(addr));
+    
+    if (getpeername(_fd, (sockaddr*)&addr, &addrlen) == 0)
+        std::cout << "New client: " << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << " FD: " << _fd << "\n";
     else
-        std::cout << "Successfully sent: " << sentDataLength << " bytes" << std::endl;
-    return (sentDataLength);
-}
-
-int	Client::getSocket() const
-{
-	return _fd;
-}
-
-HTTPRequest&	Client::getHTTPRequest()
-{
-	return _request;
-}
-
-pollfd&	Client::getPollFD()
-{
-	return _pollfd;
-}
-
-void	Client::closeConnection()
-{
-	if (state != CLOSED)
-	{
-		close(_fd);
-		state = CLOSED;
-		std::cout << "Client with FD: " << _fd << " connection closed\n";
-	}
+        std::cout << "New client with FD: " << _fd << " (could not get peer address: " << strerror(errno) << ")\n";
 }
 
 Client::~Client()
 {
-	std::cout << "Client with FD: " << _fd << " closed\n";
+    closeConnection();
+    std::cout << "Client with FD: " << _fd << " destroyed\n";
+}
+
+ssize_t Client::readData()
+{
+    if (_state == CLOSED || _fd < 0)
+        return -1;
+        
+    char tempBuffer[8192];
+    ssize_t totalBytesRead = 0;
+    
+    // Don't clear buffer - accumulate data for partial HTTP requests
+    
+    while (true)
+    {
+        ssize_t receivedDataLength = recv(_fd, tempBuffer, sizeof(tempBuffer) - 1, MSG_DONTWAIT);
+        
+        if (receivedDataLength > 0)
+        {
+            // Null-terminate and append to buffer
+            tempBuffer[receivedDataLength] = '\0';
+            _buffer_in.append(tempBuffer, receivedDataLength);
+            totalBytesRead += receivedDataLength;
+            
+            // If we received less than the buffer size, we've read all available data
+            if (receivedDataLength < (ssize_t)(sizeof(tempBuffer) - 1))
+                break;
+        }
+        else if (receivedDataLength == 0)
+        {
+            // Connection closed by peer
+            std::cout << "Client FD " << _fd << " closed connection\n";
+            _state = CLOSED;
+            return 0;
+        }
+        else // receivedDataLength < 0
+        {
+			// No more data available right now
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                break;
+            else
+            {
+                // Real error occurred
+                std::cerr << "recv() error for client FD " << _fd << ": " << strerror(errno) << "\n";
+                _state = CLOSED;
+                return -1;
+            }
+        }
+    }
+    
+    // Only parse if we have data and haven't parsed yet
+    if (totalBytesRead > 0 && !_buffer_in.empty())
+    {
+        try {
+            _request.parseHttpRequest(_buffer_in.c_str());
+        }
+        catch (const std::exception& e) {
+            std::cerr << "HTTP parsing error for client FD " << _fd << ": " << e.what() << "\n";
+            return -1;
+        }
+    }
+
+    return totalBytesRead;
+}
+
+ssize_t Client::sendData(const std::string& response)
+{
+    if (_state == CLOSED || _fd < 0)
+    {
+        std::cerr << "Attempt to send data on closed connection (FD: " << _fd << ")\n";
+        return -1;
+    }
+    
+    if (response.empty())
+    {
+        std::cerr << "Warning: Attempting to send empty response\n";
+        return 0;
+    }
+    
+    ssize_t totalSent = 0;
+    size_t remaining = response.size();
+    const char* data = response.c_str();
+    
+    // Handle partial sends
+    while (remaining > 0)
+    {
+        ssize_t sentDataLength = send(_fd, data + totalSent, remaining, MSG_NOSIGNAL);
+        
+        if (sentDataLength > 0)
+        {
+            totalSent += sentDataLength;
+            remaining -= sentDataLength;
+        }
+        else if (sentDataLength == 0)
+        {
+            std::cerr << "Warning: send() returned 0 for client FD " << _fd << "\n";
+            break;
+        }
+        else // sentDataLength < 0
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                // Socket buffer full, would need to wait or use POLLOUT
+                std::cerr << "Send would block for client FD " << _fd << "\n";
+                break;
+            }
+            else if (errno == EPIPE || errno == ECONNRESET)
+            {
+                std::cerr << "Client FD " << _fd << " disconnected during send\n";
+                _state = CLOSED;
+                return -1;
+            }
+            else
+            {
+                std::cerr << "send() error for client FD " << _fd << ": " << strerror(errno) << "\n";
+                _state = CLOSED;
+                return -1;
+            }
+        }
+    }
+    
+    if (totalSent > 0)
+    {
+        std::cout << "Successfully sent " << totalSent << " bytes to client FD " << _fd << "\n";
+        _state = WRITING; // Update state after successful send
+    }
+    
+    return totalSent;
+}
+
+void Client::closeConnection()
+{
+    if (_state != CLOSED && _fd >= 0)
+    {
+        if (close(_fd) == 0)
+            std::cout << "Client connection FD " << _fd << " closed successfully\n";
+        else
+            std::cerr << "Error closing client FD " << _fd << ": " << strerror(errno) << "\n";
+        _state = CLOSED;
+        _pollfd.fd = -1; // Mark pollfd as invalid
+    }
+}
+
+int Client::getSocket() const
+{
+    return _fd;
+}
+
+HTTPRequest& Client::getHTTPRequest()
+{
+    return _request;
+}
+
+pollfd& Client::getPollFD()
+{
+    return _pollfd;
 }
 
 #endif

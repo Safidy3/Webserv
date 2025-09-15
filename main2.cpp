@@ -56,7 +56,6 @@ int add_server(std::vector<pollfd> &pool_fds, int port, int max_con)
 {
 	int server_fd;
 	int opt;
-	struct sockaddr_in server_addr;
 
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0)
@@ -65,9 +64,10 @@ int add_server(std::vector<pollfd> &pool_fds, int port, int max_con)
 		return (-1);
 	}
 	set_nonblocking(server_fd);
-
 	opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+	struct sockaddr_in server_addr;
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_port = htons(port);
@@ -112,7 +112,7 @@ std::string float_to_str(float f)
 */
 
 
-/**/
+/*
 int main()
 {
 	std::vector<pollfd> pool_fds;
@@ -193,14 +193,16 @@ int main()
 		close(pool_fds[i].fd);
 	return 0;
 }
+*/
+
+int main()
+{
+	ServerManager serverManager;
+
+	serverManager.addServer(8080, 10);
+	serverManager.pollEvents();
 
 
-// int main()
-// {
-// 	ServerManager serverManager;
-
-// 	serverManager.addServer(8080, 10);
-
-// 	serverManager.pollEvents();
-	
-// }
+    
+    return 0;
+}
