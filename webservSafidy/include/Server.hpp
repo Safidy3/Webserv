@@ -10,7 +10,7 @@ private:
 	int					_port;
 	int					_max_con;
 	struct sockaddr_in	_address;
-	ServerConfig_t		_config;
+	ServerConfig_t&		_config;
 	pollfd				_pollfd;
 
 public:
@@ -27,7 +27,7 @@ public:
 Server::Server(ServerConfig_t config, int port, int max_con)
 	: _fd(-1), _port(port), _max_con(max_con), _config(config)
 {
-	// Initialize address structure properly
+	// Initialize address structure
 	memset(&_address, 0, sizeof(_address));
 	_address.sin_family = AF_INET;
 	_address.sin_addr.s_addr = INADDR_ANY;

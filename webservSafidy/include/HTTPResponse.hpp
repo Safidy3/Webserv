@@ -40,7 +40,7 @@ public:
 	std::string	getBody() const { return body; }
 	std::string	getStatus() const { return status; }
 
-	std::string	toString()
+	std::string	ftToString()
 	{
 		std::string response;
 		response += "HTTP/1.1 " + status + "\r\n";

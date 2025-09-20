@@ -1,7 +1,7 @@
 #ifndef SERVERMANAGER_HPP
 #define SERVERMANAGER_HPP
 
-#include "../include.hpp"
+#include "../webserv.hpp"
 
 
 class ServerManager
@@ -171,10 +171,10 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 			response.setBody("<html><body><h1>Hello, World!</h1></body></html>");
 			response.setStatus(200);
 			response.setHeader("Content-Type", "text/html");
-			response.setHeader("Content-Length", toString(response.getBody().size()));
+			response.setHeader("Content-Length", ftToString(response.getBody().size()));
 			response.setHeader("Connection", "close");
 
-			if (client->sendData(response.toString()) < 0)
+			if (client->sendData(response.ftToString()) < 0)
 				should_close = true;
 			else
 				should_close = true; // Close after sending response

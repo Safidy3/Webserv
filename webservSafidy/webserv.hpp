@@ -6,7 +6,7 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:39 by safandri          #+#    #+#             */
-/*   Updated: 2025/08/29 11:22:55 by safandri         ###   ########.fr       */
+/*   Updated: 2025/09/20 15:25:41 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,49 +30,44 @@
 #include <sstream>		// for float to string
 #include <fstream>		// for static_file manipulation
 #include <sys/stat.h>	// for stat()
-#include <fcntl.h>		// for non-blocking fd
+// #include <fcntl.h>		// for non-blocking fd
 #include <poll.h>		// for io multiplexing (poll)
+
+#include "utils/utils.hpp"
+
+struct MimeTypes
+{
+    std::map<std::string, std::string> types;
+};
+
+struct LocationConfig_t
+{
+    std::string							path;
+    std::string							root;
+    std::string							returnPath;
+    std::string							cgiExtension;
+    std::string							cgiPath;
+    std::string							uploadDir;
+    std::string							defaultFile;
+    bool								autoindex;
+    int									returnCode;
+    std::vector<std::string>			indexFiles;
+    std::vector<std::string>			methods;
+    std::map<std::string,std::string>	directives;
+
+    LocationConfig_t() : autoindex(false), returnCode(0) {}
+};
 
 struct ServerConfig_t
 {
-	std::string root;
-	std::string index;
-	std::string error_page;
-	std::vector<std::string> methods;
-	std::string cgi_path;
+    std::string					root;
+    std::string					host;
+    std::vector<std::string>	indexFiles;
+    std::map<int,std::string>	errorPages;
+    std::vector<LocationConfig_t>	locations;
+    int							listenPort;
+    size_t						clientMaxBodySize;
 };
-
-template <typename T>
-std::string toString(T value)
-{
-    std::ostringstream os;
-    os << value;
-    return os.str();
-}
-
-class webserv
-{
-	private:
-		int									server_fd, client_fd;
-		std::string							http_response;
-		std::map<std::string, std::string>	request;
-		std::map<std::string, std::string>	response;
-
-	public:
-		webserv();
-		~webserv();
-
-		void	serv_error(const std::string& str);
-		void	serv_listn();
-		void	pars_request();
-		void	send_response();
-		void	end_conex();
-};
-
-void	parsString(std::string& str, std::map<std::string, std::string>& dict);
-void	insertMap(std::string& line, std::map<std::string, std::string>& dict);
-bool	isAllSpace(const std::string& str);
-void	print_map(std::map<std::string, std::string>& dict);
 
 void set_nonblocking(int fd);
 // bool	parseHttpRequest(const char *rawRequest, HttpRequest &request);
