@@ -21,7 +21,7 @@ DIR_UTILS = ./utils
 OBJ_DIR = ./obj
 INC_DIR = ./include
 
-WEBSERV = ../main.cpp
+WEBSERV = ../main.cpp ConfigParser.cpp
 
 SRC_WEBSERV = $(addprefix $(DIR_WEBSERV)/,$(WEBSERV))
 UTILS = $(DIR_UTILS)/libutils.a

@@ -1,5 +1,5 @@
-#ifndef CONF_PARSER_HPP
-#define CONF_PARSER_HPP
+#ifndef CONFIGPARSER_HPP
+#define CONFIGPARSER_HPP
 
 #include "../webserv.hpp"
 
@@ -37,3 +37,4 @@ class ConfigParser
 };
 
 #endif
+

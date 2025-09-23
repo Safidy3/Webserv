@@ -35,10 +35,10 @@
 
 #include "utils/utils.hpp"
 
-struct MimeTypes
-{
-    std::map<std::string, std::string> types;
-};
+// struct MimeTypes
+// {
+//     std::map<std::string, std::string> types;
+// };
 
 struct LocationConfig_t
 {
