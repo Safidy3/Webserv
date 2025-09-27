@@ -25,7 +25,7 @@ void Server::handleClientData(size_t index)
         if (_fds[index].fd == _fds[serverIndex].fd)
             break;
     }
-    const ServerConfig_t &serverConf = _config.servers[serverIndex];
+    const ServerConfig &serverConf = _config.servers[serverIndex];
 
     // Vérifier la taille du body
     if (req.contentLength > serverConf.clientMaxBodySize) {

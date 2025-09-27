@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   httpServer.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:37:39 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/09/20 15:53:19 by safandri         ###   ########.fr       */
+/*   Updated: 2025/09/16 19:04:03 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,14 +15,17 @@
 
 #include "httpConfig.hpp"
 #include "httpRequest.hpp"
+#include "handleErrors.hpp"
 #include "utils.hpp"
 
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <unistd.h>
+#include <sys/poll.h>
 #include <poll.h>
+#include <unistd.h>
 #include <vector>
+#include <set>
 #include <map>
 #include <string>
 
@@ -30,12 +33,15 @@ static const size_t BUFFER_SIZE = 1024;
 static const int MAX_PENDING_QUEUE = 10;
 static const int MAX_CLIENTS = 100;
 
+
 class Server
 {
     private:
         HttpConfig _config;
         std::vector<struct pollfd> _fds;
         std::vector<int> _clientSockets;
+        std::map<int, ServerConfig*> _listenSockets;
+        std::map<int, ServerConfig*> _clientToServer;
         MimeTypes &_mimeTypes;
 
         void setupListeningSockets();

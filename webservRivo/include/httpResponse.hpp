@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   httpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/09/20 15:25:41 by safandri         ###   ########.fr       */
+/*   Updated: 2025/09/16 18:02:57 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ class HttpResponseBuilder
 
 
         std::string getMimeType(const std::string &path);
-        std::string buildResponse(const HttpRequest &req, const ServerConfig_t &serverConf, const LocationConfig_t &locationConf);
+        std::string buildResponse(const HttpRequest &req, const ServerConfig &serverConf, const LocationConfig &locationConf);
 };
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:40:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/09/20 15:53:23 by safandri         ###   ########.fr       */
+/*   Updated: 2025/09/15 19:30:37 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,15 +31,16 @@ int main(int argc, char **argv)
     try
     {
         ConfigParser parser(configPath, mimeTypesPath);
+
         HttpConfig config = parser.parse();
+
         MimeTypes types;
         parser.loadMimeTypes(types);
 
         Server server(config, types);
         server.run();
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }

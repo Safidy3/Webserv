@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main3.cpp                                          :+:      :+:    :+:   */
+/*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:43:48 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/09/20 15:25:41 by safandri         ###   ########.fr       */
+/*   Updated: 2025/09/16 16:40:06 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@ int main(int argc, char **argv)
 {
     std::string configFile = "./conf.d/webserv.conf";
     std::string mimeTypesPath = "./conf.d/mime.type";
-
     if (argc == 2)
         configFile = argv[1];
 
@@ -28,7 +27,7 @@ int main(int argc, char **argv)
         std::cout << "HTTP Config:" << std::endl;
         for (size_t i = 0; i < httpConfig.servers.size(); ++i)
         {
-            const ServerConfig_t &server = httpConfig.servers[i];
+            const ServerConfig &server = httpConfig.servers[i];
             std::cout << "Server " << i + 1 << ":" << std::endl;
             std::cout << "  Host: " << server.host << std::endl;
             std::cout << "  Listen Port: " << server.listenPort << std::endl;
@@ -46,7 +45,7 @@ int main(int argc, char **argv)
 
             for (size_t j = 0; j < server.locations.size(); ++j)
             {
-                const LocationConfig_t &loc = server.locations[j];
+                const LocationConfig &loc = server.locations[j];
                 std::cout << "  Location " << j + 1 << ": " << loc.path << std::endl;
                 std::cout << "    Root: " << loc.root << std::endl;
 

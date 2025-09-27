@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: safandri <safandri@student.42antananari    +#+  +:+       +#+         #
+#    By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/28 14:08:13 by rhanitra          #+#    #+#              #
-#    Updated: 2025/09/20 14:44:02 by safandri         ###   ########.fr        #
+#    Updated: 2025/09/24 16:36:28 by rivoinfo         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -22,10 +22,12 @@ OBJ_DIR = ./obj
 INC_DIR = ./include
 
 WEBSERV = configParser.cpp requestParser.cpp server.cpp responseBuilder.cpp \
-		handleCGI.cpp ../main.cpp
+		handleCGI.cpp handleErrors.cpp \
+          ../main.cpp
 
 SRC_WEBSERV = $(addprefix $(DIR_WEBSERV)/,$(WEBSERV))
 UTILS = $(DIR_UTILS)/libutils.a
+
 
 OBJ_WEBSERV = $(addprefix $(OBJ_DIR)/,$(notdir $(SRC_WEBSERV:.cpp=.o)))
 
@@ -46,6 +48,12 @@ $(UTILS):
 $(NAME): $(OBJ_WEBSERV) $(UTILS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJ_WEBSERV) $(UTILS)
 
+watch:
+	./bootstrap/dart-sass/sass ./bootstrap/sass/style.scss ./bootstrap/sass/style.css --watch
+
+compress:
+	./bootstrap/dart-sass/sass ./bootstrap/sass/style.scss ./bootstrap/sass/style.css --style=compressed --no-source-map
+	
 clean:
 	$(RM) $(OBJ_DIR)
 	$(MAKE) -C $(DIR_UTILS) clean

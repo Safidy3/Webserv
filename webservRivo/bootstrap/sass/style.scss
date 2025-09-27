@@ -1,0 +1,130 @@
+
+
+
+/*body {
+  font-family: "Inter", sans-serif;
+  background: black;
+  color: white;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.form {
+  width: 90%;
+  max-width: 500px;
+  background: #111;
+  border: 1px solid white;
+  border-radius: 8px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.form form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.form fieldset {
+  border: 1px solid white;
+  border-radius: 5px;
+  padding: 5px;
+}
+.form legend {
+  padding: 0 10px;
+  font-weight: bold;
+}
+.form label {
+  margin-bottom: 5px;
+  color: white;
+  font-size: 0.9rem;
+}
+.form input[type=number],
+.form input[type=date],
+.form select {
+  padding: 8px 10px;
+  border: 1px solid white;
+  border-radius: 4px;
+  background: transparent;
+  color: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+.form input[type=number]:focus,
+.form input[type=date]:focus,
+.form select:focus {
+  outline: none;
+  border-color: white;
+  background: #222;
+}
+.form input[type=text],
+.form input[type=email] {
+  padding: 8px 10px;
+  width: 80%;
+  border: 1px solid white;
+  border-radius: 4px;
+  background: transparent;
+  color: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+.form input[type=text]:focus,
+.form input[type=email]:focus {
+  outline: none;
+  border-color: white;
+  background: #222;
+}
+.form textarea {
+  width: 100%;
+  height: 100px;
+  padding: 8px 10px;
+  border: 1px solid white;
+  border-radius: 4px;
+  background: transparent;
+  color: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+.form textarea:focus {
+  outline: none;
+  border-color: white;
+  background: #222;
+}
+.form input[type=radio],
+.form input[type=checkbox] {
+  margin-right: 5px;
+}
+.form .sex, .form .firstName, .form .name, .form .birthDay, .form .status,
+.form .Telephone, .form .email, .form .cv, .form .contract, .form .info {
+  margin-bottom: 5px;
+}
+.form .contract {
+  display: inline;
+}
+.form .Validation {
+  display: flex;
+  justify-content: space-between;
+}
+.form .Validation button {
+  background: transparent;
+  border: 1px solid white;
+  color: white;
+  padding: 8px 15px;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.3s, color 0.3s;
+}
+.form .Validation button:hover {
+  background: white;
+  color: black;
+}*/
+
+@import "bootstrap/bootstrap.scss";
+
+body {
+    background: black;
+    color: white;
+}

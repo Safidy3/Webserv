@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   configParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/09/20 15:25:41 by safandri         ###   ########.fr       */
+/*   Updated: 2025/09/16 17:17:09 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,7 +71,7 @@ void ConfigParser::expectToken(std::istream &input, const std::string &expected)
     }
 }
 
-void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig_t &loc)
+void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
 {
     std::string token;
     while (input >> token)
@@ -119,7 +119,7 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig_t &loc
     }
 }
 
-void ConfigParser::parseServerBlock(std::istream &input, ServerConfig_t &server)
+void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
 {
     std::string token;
     while (input >> token)
@@ -192,7 +192,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig_t &server)
         }
         else if (token == "location")
         {
-            LocationConfig_t loc;
+            LocationConfig loc;
             input >> loc.path;
             std::string brace;
             input >> brace;
@@ -213,7 +213,7 @@ void ConfigParser::parseHttpBlock(std::istream &input, HttpConfig &httpConfig)
 
         if (token == "server")
         {
-            ServerConfig_t server;
+            ServerConfig server;
             std::string brace;
             input >> brace;
             if (brace != "{") throw std::runtime_error("Expected '{' after server");
