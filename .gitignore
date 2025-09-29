@@ -67,3 +67,4 @@
 .vscode
 vgcore.*
 webserv
+bootstrap/*
