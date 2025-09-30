@@ -26,6 +26,7 @@ int main(int argc, char **argv)
 {
 	std::string configPath;
 	std::string mimeTypesPath = "./conf.d/mime.type";
+
 	if (argc == 2 && argv[1][0])
 		configPath = argv[1];  
 	else if (argc == 1)
@@ -38,12 +39,13 @@ int main(int argc, char **argv)
 		ConfigParser	parser(configPath, mimeTypesPath);
 		HttpConfig		config = parser.parse();
 		MimeTypes		types;
+		ServerManager	serverManager;
+
 		parser.loadMimeTypes(types);
-		ServerManager serverManager;
 		for (size_t i = 0; i < config.servers.size(); ++i)
 			serverManager.addServer(config.servers[i].listenPort, MAX_CLIENTS);
-		serverManager.addServer(8080, 10);
-		serverManager.pollEvents();
+
+		serverManager.pollEvents(1);
 	}
 	catch (const std::exception& e)
 	{
@@ -51,4 +53,3 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
-

@@ -21,7 +21,7 @@ DIR_UTILS = ./utils
 OBJ_DIR = ./obj
 INC_DIR = ./include
 
-WEBSERV = ../main.cpp ConfigParser.cpp
+WEBSERV = ../main.cpp ConfigParser.cpp Client.cpp Server.cpp HTTPRequest.cpp HTTPResponse.cpp ServerManager.cpp
 
 SRC_WEBSERV = $(addprefix $(DIR_WEBSERV)/,$(WEBSERV))
 UTILS = $(DIR_UTILS)/libutils.a
@@ -62,6 +62,9 @@ runre: re
 	@./$(NAME)
 
 debug: all
-	@valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME)
+	@valgrind --track-origins=yes ./$(NAME)
+
+# debug: all
+# 	@valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME)
 
 .PHONY: all clean fclean re run runre

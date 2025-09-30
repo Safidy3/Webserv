@@ -35,38 +35,33 @@
 
 #include "utils/utils.hpp"
 
-// struct MimeTypes
-// {
-//     std::map<std::string, std::string> types;
-// };
-
 struct LocationConfig_t
 {
-    std::string							path;
-    std::string							root;
-    std::string							returnPath;
-    std::string							cgiExtension;
-    std::string							cgiPath;
-    std::string							uploadDir;
-    std::string							defaultFile;
-    bool								autoindex;
-    int									returnCode;
-    std::vector<std::string>			indexFiles;
-    std::vector<std::string>			methods;
-    std::map<std::string,std::string>	directives;
+	std::string							path;
+	std::string							root;
+	std::string							returnPath;
+	std::string							cgiExtension;
+	std::string							cgiPath;
+	std::string							uploadDir;
+	std::string							defaultFile;
+	bool								autoindex;
+	int									returnCode;
+	std::vector<std::string>			indexFiles;
+	std::vector<std::string>			methods;
+	std::map<std::string,std::string>	directives;
 
-    LocationConfig_t() : autoindex(false), returnCode(0) {}
+	LocationConfig_t() : autoindex(false), returnCode(0) {}
 };
 
 struct ServerConfig_t
 {
-    std::string					root;
-    std::string					host;
-    std::vector<std::string>	indexFiles;
-    std::map<int,std::string>	errorPages;
-    std::vector<LocationConfig_t>	locations;
-    int							listenPort;
-    size_t						clientMaxBodySize;
+	std::string					root;
+	std::string					host;
+	std::vector<std::string>	indexFiles;
+	std::map<int,std::string>	errorPages;
+	std::vector<LocationConfig_t>	locations;
+	int							listenPort;
+	size_t						clientMaxBodySize;
 };
 
 void set_nonblocking(int fd);
