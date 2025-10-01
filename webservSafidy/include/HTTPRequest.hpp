@@ -6,27 +6,40 @@
 class HTTPRequest
 {
 private:
+	// Request line
 	std::string method;
-	std::string path;
-	std::string version;
-	std::string body;
+	std::string uri;
+	std::string queryString;
+	std::string fragment;
+	std::string httpVersion;
+
+	// Headers
 	std::map<std::string, std::string> headers;
+	std::string host;
+	int         port;
+
+	// Body
+	std::string body;
+	std::string boundary;
+	size_t      contentLength;
+
+	std::string resolvedPath;
+
+	void	parseRequestLine(const std::string &requestLine);
+	void	parseHeaders(const std::vector<std::string> &headerLines);
+	void	parseUri(const std::string &uri);
+	void	parseHostHeader(const std::string &hostHeader);
+	// void	parseBody(const std::string &body);
 
 public:
-	HTTPRequest() : method(""), path(""), version(""), body(""), headers() {};
+	HTTPRequest() : method(""), uri(""), queryString(""), fragment(""), httpVersion(""),
+					host(""), port(80), body(""), boundary(""), contentLength(0), resolvedPath("") {}
 	HTTPRequest(const char *raw) { parseHttpRequest(raw); }
 	~HTTPRequest(){};
 
-	std::string getMethod() const { return method; }
-	std::string getPath() const { return path; }
-	std::string getVersion() const { return version; }
-	std::string getBody() const { return body; }
-	std::map<std::string, std::string> getHeaders() const { return headers; }
-
-	bool	parseHttpRequest(const char *raw);
-	void	printRequest();
-	// bool	isComplete(); // (check if full request is received)
-	// size_t	getContentLength();
+	void	parseHttpRequest(const char *raw);
+	void	printRequest() const;
+	size_t	getContentLength();
 };
 
 #endif

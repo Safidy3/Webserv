@@ -37,7 +37,7 @@ public:
 	void	removeClient(Client* client);
 
 	void    pollEvents(int debug = 0);
-	int		handleIncomingClient(Server* server, pollfd& poll_fd, int fd);
+	void	handleIncomingClient(Server* server, pollfd& poll_fd, int fd);
 	void	handleClientSocket(Client* client, pollfd& poll_fd);
 
 	void	printPool();

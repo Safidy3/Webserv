@@ -28,10 +28,10 @@ public:
 	void	closeConnection();
 
 	Server&			getServer() const { return _server; }
-	int				getSocket() const;
-	HTTPRequest&	getHTTPRequest();
-	pollfd&			getPollFD();
+	int				getSocket() const { return _fd; }
 	State			getState() const { return _state; }
+	HTTPRequest&	getHTTPRequest() { return _request; }
+	pollfd&			getPollFD() { return _pollfd; }
 
 	void			setState(State state) { _state = state; }
 };

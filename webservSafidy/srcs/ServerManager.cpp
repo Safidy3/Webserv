@@ -84,28 +84,17 @@ void	ServerManager::removeClient(Client* client)
 	}
 }
 
-int		ServerManager::handleIncomingClient(Server* server, pollfd& poll_fd, int fd)
+void	ServerManager::handleIncomingClient(Server* server, pollfd& poll_fd, int fd)
 {
 	if (poll_fd.revents & POLLIN)
 	{
 		Client* new_client = server->acceptClient();
 		if (new_client)
-		{
-			if (!addClient(new_client))
-			{
-				new_client->closeConnection();
-				delete new_client;
-			}
-			else
-				return (1); // Successfully added client
-		}
+			if (addClient(new_client))
+				return;
+		std::cerr << "Failed to accept new client on server fd " << fd << "\n";
+		removeClient(new_client);
 	}
-	if (poll_fd.revents & (POLLERR | POLLHUP | POLLNVAL))
-	{
-		std::cerr << "Error on server socket " << fd << "\n";
-		removeServer(fd);
-	}
-	return (0);
 }
 
 void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
@@ -119,7 +108,9 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 			should_close = true;
 		else
 		{
-			// Process client request and send response
+			HTTPRequest& request = client->getHTTPRequest();
+			request.printRequest();
+
 			HTTPResponse response;
 			response.setBody("<html><body><h1>Hello, World!</h1></body></html>");
 			response.setStatus(200);
@@ -143,7 +134,6 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 
 void ServerManager::pollEvents(int debug)
 {
-	// Don't call startServers() here - servers should already be initialized
 	if (_poolFds.empty())
 	{
 		std::cerr << "No file descriptors to poll\n";
@@ -174,10 +164,7 @@ void ServerManager::pollEvents(int debug)
 
 			// server socket
 			if (server_it != _serversMap.end())
-			{
-				if (handleIncomingClient(server, _poolFds[i], fd) == 1)
-					continue;
-			}
+				handleIncomingClient(server, _poolFds[i], fd);
 			// client socket
 			else if (client_it != _clientsMap.end())
 				handleClientSocket(client, _poolFds[i]);

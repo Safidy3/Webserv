@@ -1,106 +1,123 @@
 #include "../include/HTTPRequest.hpp"
 
-
-// Utility function to trim whitespace
-std::string	trim(const std::string &str)
+void	HTTPRequest::parseHttpRequest(const char *raw)
 {
-	size_t start = str.find_first_not_of(" \t\r\n");
-	if (start == std::string::npos)
-		return "";
-	size_t end = str.find_last_not_of(" \t\r\n");
-	return str.substr(start, end - start + 1);
-}
+	const std::string &rawRequest = std::string(raw);
 
-// Utility function to convert to lowercase
-std::string	toLower(const std::string &str)
-{
-	std::string result = str;
-	std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-	return result;
-}
+	std::istringstream stream(rawRequest);
+	std::string line;
 
-bool	HTTPRequest::parseHttpRequest(const char *Request)
-{
-	if (Request == NULL || strlen(Request) == 0)
-		return false;
+	// 1. Parse request line
+	if (!std::getline(stream, line) || line.empty())
+		throw std::runtime_error("Invalid HTTP request: missing request line");
+	if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove \r
+	parseRequestLine(line);
 
-	const std::string &rawRequest = std::string(Request);
-
-	// Split into lines using \r\n
-	std::vector<std::string>	lines;
-	size_t						pos = 0;
-	size_t						found = 0;
-
-	while ((found = rawRequest.find("\r\n", pos)) != std::string::npos)
+	// 2. Parse headers
+	std::vector<std::string> headerLines;
+	while (std::getline(stream, line) && line != "\r" && !line.empty())
 	{
-		lines.push_back(rawRequest.substr(pos, found - pos));
-		pos = found + 2;
+		if (line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
+		headerLines.push_back(line);
 	}
-	// Handle case where last line doesn't end with \r\n
-	if (pos < rawRequest.length())
-		lines.push_back(rawRequest.substr(pos));
+	parseHeaders(headerLines);
 
-	if (lines.empty())
-		return false;
+	// 3. Parse body (everything after headers)
+	std::string http_body;
+	if (std::getline(stream, http_body, '\0'))
+		body = http_body;
+		// parseBody(http_body);
+}
 
-	// Parse request line (first line): METHOD PATH VERSION
-	std::istringstream requestLine(lines[0]);
-	if (!(requestLine >> method >> path >> version))
-		return false;
+void HTTPRequest::parseRequestLine(const std::string &requestLine)
+{
+	std::istringstream iss(requestLine);
+	if (!(iss >> method >> uri >> httpVersion))
+		throw std::runtime_error("Malformed request line");
 
-	// Convert method to uppercase for consistency
-	std::transform(method.begin(), method.end(), method.begin(), ::toupper);
+	parseUri(uri);
+}
 
-	// Parse headers
-	size_t headerEnd = 1;
-	for (size_t i = 1; i < lines.size(); ++i)
+void HTTPRequest::parseHeaders(const std::vector<std::string> &headerLines)
+{
+	for (size_t i = 0; i < headerLines.size(); ++i)
 	{
-		if (lines[i].empty())
-		{
-			// Empty line indicates end of headers
-			headerEnd = i + 1;
-			break;
-		}
-
-		// Find the colon separator
-		size_t colonPos = lines[i].find(':');
-		// Malformed header, skip it
+		size_t colonPos = headerLines[i].find(':');
 		if (colonPos == std::string::npos)
 			continue;
 
-		std::string headerName = trim(lines[i].substr(0, colonPos));
-		std::string headerValue = trim(lines[i].substr(colonPos + 1));
+		std::string key = headerLines[i].substr(0, colonPos);
+		std::string value = headerLines[i].substr(colonPos + 1);
 
-		// Store header name in lowercase for case-insensitive lookup
-		headers[toLower(headerName)] = headerValue;
-	}
+		while (!value.empty() && (value[0] == ' ' || value[0] == '\t'))
+			value.erase(0, 1);
 
-	// Parse body (everything after the empty line)
-	if (headerEnd < lines.size())
-	{
-		std::ostringstream bodyStream;
-		for (size_t i = headerEnd; i < lines.size(); ++i)
+		headers[key] = value;
+
+		if (key == "Host")
+			parseHostHeader(value);
+		else if (key == "Content-Length")
+			contentLength = static_cast<size_t>(ftToInt(value.c_str()));
+		else if (key == "Content-Type")
 		{
-			if (i > headerEnd)
-				bodyStream << "\r\n";
-			bodyStream << lines[i];
+			size_t pos = value.find("boundary=");
+			if (pos != std::string::npos)
+				boundary = value.substr(pos + 9);
 		}
-		body = bodyStream.str();
 	}
-
-	return true;
 }
 
-// Example usage function
-void	HTTPRequest::printRequest()
+// void HTTPRequest::parseBody(const std::string &body)
+// {
+// 	// body = body;
+// }
+
+void HTTPRequest::parseUri(const std::string &uri)
 {
-	std::cout << "Method: " << method << std::endl;
-	std::cout << "Path: " << path << std::endl;
-	std::cout << "Version: " << version << std::endl;
-	std::cout << "Headers:" << std::endl;
-	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
-		std::cout << "  " << it->first << ": " << it->second << std::endl;
-	if (!body.empty())
-		std::cout << "Body: " << body << std::endl;
+	size_t queryPos = uri.find('?');
+	size_t fragmentPos = uri.find('#');
+
+	queryString.clear();
+	fragment.clear();
+
+	if (queryPos != std::string::npos)
+		queryString = uri.substr(queryPos + 1, fragmentPos - queryPos - 1);
+	if (fragmentPos != std::string::npos)
+		fragment = uri.substr(fragmentPos + 1);
 }
 
+void HTTPRequest::parseHostHeader(const std::string &hostHeader)
+{
+	size_t colonPos = hostHeader.find(':');
+	if (colonPos != std::string::npos)
+	{
+		host = hostHeader.substr(0, colonPos);
+		port = ftToInt(hostHeader.substr(colonPos + 1).c_str());
+	}
+	else
+	{
+		host = hostHeader;
+		port = 80;
+	}
+}
+
+void    HTTPRequest::printRequest() const
+{
+	std::cout << "Method: " << method << "\n";
+	std::cout << "URI: " << uri << "\n";
+	std::cout << "Query String: " << queryString << "\n";
+	std::cout << "Fragment: " << fragment << "\n";
+	std::cout << "HTTP Version: " << httpVersion << "\n";
+
+	std::cout << "Headers:\n";
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
+		std::cout << it->first << ": " << it->second << "\n";
+
+	std::cout << "Host: " << host << "\n";
+	std::cout << "Port: " << port << "\n";
+	std::cout << "Content-Length: " << contentLength << "\n";
+	std::cout << "Boundary: " << boundary << "\n";
+
+	std::cout << "Body:\n" << body << "\n";
+}

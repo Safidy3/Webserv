@@ -174,18 +174,3 @@ void	Client::closeConnection()
 		_pollfd.fd = -1; // Mark pollfd as invalid
 	}
 }
-
-int Client::getSocket() const
-{
-	return _fd;
-}
-
-HTTPRequest &Client::getHTTPRequest()
-{
-	return _request;
-}
-
-pollfd &Client::getPollFD()
-{
-	return _pollfd;
-}

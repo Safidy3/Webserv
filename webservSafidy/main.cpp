@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 		for (size_t i = 0; i < config.servers.size(); ++i)
 			serverManager.addServer(config.servers[i].listenPort, MAX_CLIENTS);
 
-		serverManager.pollEvents(1);
+		serverManager.pollEvents();
 	}
 	catch (const std::exception& e)
 	{
