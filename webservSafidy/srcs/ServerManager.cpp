@@ -19,18 +19,18 @@ void	ServerManager::printPool()
 	}
 }
 
-void	ServerManager::addServer(int port, int max_con)
+void	ServerManager::addServer(ServerConfig_t config, const MimeTypes& mimeTypes)
 {
-	Server* new_server = new Server(ServerConfig_t(), port, max_con);
+	Server* new_server = new Server(config, &mimeTypes);
 	if (!new_server->init())
 	{
-		std::cerr << "Failed to initialize server on port " << port << "\n";
+		std::cerr << "Failed to initialize server on port " << config.listen_port << "\n";
 		delete new_server;
 		return;
 	}
 	_serversMap[new_server->getSocket()] = new_server;
 	_poolFds.push_back(new_server->getPollFD());
-	// std::cout << "Server added on port " << port << "\n";
+	new_server->printServer();
 }
 
 void	ServerManager::removeServer(int server_fd)
@@ -99,40 +99,38 @@ void	ServerManager::handleIncomingClient(Server* server, pollfd& poll_fd, int fd
 
 void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 {
-	bool should_close = false;
-
 	if (poll_fd.revents & POLLIN)
 	{
 		ssize_t bytes_read = client->readData();
-		if (bytes_read <= 0)
-			should_close = true;
-		else
+		if (bytes_read > 0)
 		{
-			HTTPRequest& request = client->getHTTPRequest();
-			request.printRequest();
+			HTTPResponse		response;
+			HTTPRequest			request;
 
-			HTTPResponse response;
-			response.setBody("<html><body><h1>Hello, World!</h1></body></html>");
-			response.setStatus(200);
-			response.setHeader("Content-Type", "text/html");
-			response.setHeader("Content-Length", ftToString(response.getBody().size()));
-			response.setHeader("Connection", "close");
+			try
+			{
+				request.parseHttpRequest(client->getRawRequest().c_str());
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << e.what() << '\n';
+				response = ResponseFactory::badRequest_400();
+				client->sendData(response.build());
+				removeClient(client);
+				return;
+			}
 
-			if (client->sendData(response.ftToString()) < 0)
-				should_close = true;
-			else
-				should_close = true; // Close after sending response
+			HTTPMethodHandler MethodHandler(request, client->getServer());
+			response = MethodHandler.generateResponse();
+			client->sendData(response.build());
 		}
+		removeClient(client);
 	}
-
 	if (poll_fd.revents & (POLLERR | POLLHUP | POLLNVAL))
-		should_close = true;
-	// No need to adjust index when iterating backwards
-	if (should_close)
 		removeClient(client);
 }
 
-void ServerManager::pollEvents(int debug)
+void ServerManager::pollEvents(bool debug)
 {
 	if (_poolFds.empty())
 	{

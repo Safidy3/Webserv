@@ -1,18 +1,28 @@
 #include "../include/Server.hpp"
 
-Server::Server(ServerConfig_t config, int port, int max_con) :
-	_fd(-1), _port(port), _max_con(max_con), _config(config)
+Server::Server(ServerConfig_t config, const MimeTypes* mimeTypes) :
+	_fd(-1), _config(config), _mimeTypes(mimeTypes)
 {
 	// Initialize address structure
 	memset(&_address, 0, sizeof(_address));
 	_address.sin_family = AF_INET;
 	_address.sin_addr.s_addr = INADDR_ANY;
-	_address.sin_port = htons(_port);
+	_address.sin_port = htons(_config.listen_port);
 
 	// Initialize pollfd
 	_pollfd.fd = -1;
 	_pollfd.events = POLLIN;
 	_pollfd.revents = 0;
+
+	std::vector<LocationConfig_t>::iterator it = _config.locations.begin();
+	while (it != _config.locations.end())
+	{
+		if (it->root.empty())
+			it->root = _config.root + it->path;
+		if (it->root[it->root.size() - 1] != '/')
+			it->root += '/';
+		++it;
+	}
 }
 
 Server::~Server()
@@ -57,7 +67,7 @@ bool Server::init()
 		return false;
 	}
 
-	if (listen(_fd, _max_con) < 0)
+	if (listen(_fd, DEFAULT_MAX_PENDING_CONNECTIONS) < 0)
 	{
 		std::cerr << "Listen failed: " << strerror(errno) << std::endl;
 		close(_fd);
@@ -67,7 +77,7 @@ bool Server::init()
 
 	// Update pollfd
 	_pollfd.fd = _fd;
-	std::cout << "Server listening on port " << _port << std::endl;
+	// std::cout << "Server listening on port " << _port << std::endl;
 	return true;
 }
 
@@ -96,17 +106,137 @@ void	Server::removeClient(Client* client)
 		std::cerr << "Client not found in server's client list\n";
 }
 
-int	Server::getSocket() const
+const LocationConfig_t*	Server::getLocationsConfig(const std::string& path) const
 {
-	return _fd;
+	for (size_t i = 0; i < _config.locations.size(); ++i)
+		if (path == _config.locations[i].path)
+			return &_config.locations[i];
+	return NULL;
 }
 
-pollfd&	Server::getPollFD()
+const std::vector<std::string>*	Server::getLocationMethods(const std::string& path) const
 {
-	return _pollfd;
+	const LocationConfig_t* loc = getLocationsConfig(path);
+	if (loc)
+		return &loc->methods;
+	return NULL;
 }
 
-// ServerConfig_t& Server::getConfig()
-// {
-// 	return _config;
-// }
+const std::string	Server::getLocationRoot(const std::string& path) const
+{
+	const LocationConfig_t* loc = getLocationsConfig(path);
+	if (loc)
+		return loc->root;
+	return "";
+}
+
+const std::string*	Server::getErrorPage(int code) const
+{
+	std::map<int, std::string>::const_iterator it = _config.error_pages.find(code);
+	if (it != _config.error_pages.end())
+		return &it->second;
+	return NULL;
+}
+
+bool	Server::isValidMethod(const std::string& path, const std::string& method) const
+{
+	const std::vector<std::string>* methods = getLocationMethods(path);
+	if (!methods)
+		return false;
+	return std::find(methods->begin(), methods->end(), method) != methods->end();
+}
+
+bool	Server::isValidContentType(const std::string& contentType) const
+{
+	if (!_mimeTypes)
+		return false;
+	for (MimeTypes::const_iterator it = _mimeTypes->begin(); it != _mimeTypes->end(); ++it)
+		if (it->second == contentType)
+			return true;
+	return false;
+};
+
+bool	Server::isValidUri(const std::string& path) const
+{
+	return getLocationsConfig(path) != NULL;
+};
+
+
+void	Server::printServer()
+{
+	ServerConfig_t server = getConfig();
+	std::cout << "\nServer: " << server.server_name << std::endl;
+	std::cout << "\tListen: " << server.listen_address << ":"
+			<< server.listen_port << std::endl;
+	if (!server.server_name.empty())
+		std::cout << "\tServer Name: " << server.server_name << std::endl;
+	if (!server.root.empty())
+		std::cout << "\tRoot: " << server.root << std::endl;
+	if (!server.log_path.empty())
+		std::cout << "\tLog Path: " << server.log_path << std::endl;
+	if (!server.index.empty())
+	{
+		std::cout << "\tIndex: ";
+		for (size_t i = 0; i < server.index.size(); i++)
+		{
+			std::cout << server.index[i];
+			if (i < server.index.size() - 1)
+				std::cout << " ";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << "\tClient Max Body Size: " << server.client_max_body_size << std::endl;
+	std::cout << "\tKeepalive Timeout: " << server.keepalive_timeout << std::endl;
+
+	if (!server.error_pages.empty())
+	{
+		std::cout << "\tError Pages:" << std::endl;
+		for (std::map<int, std::string>::const_iterator it = server.error_pages.begin();
+			it != server.error_pages.end(); ++it)
+			std::cout << "\t  " << it->first << " -> " << it->second << std::endl;
+	}
+
+	if (!server.locations.empty())
+	{
+		std::cout << "Locations: " << server.locations.size() << std::endl;
+		for (size_t i = 0; i < server.locations.size(); i++)
+			printLocation(server.locations[i]);
+	}
+}
+
+void	Server::printLocation(const LocationConfig_t &location)
+{
+	std::cout << "\tLocation: " << location.path << std::endl;
+	if (!location.root.empty())
+		std::cout << "\t  Root: " << location.root << std::endl;
+	if (!location.index.empty())
+	{
+		std::cout << "\t  Index: ";
+		for (size_t i = 0; i < location.index.size(); i++)
+		{
+			std::cout << location.index[i];
+			if (i < location.index.size() - 1)
+				std::cout << " ";
+		}
+		std::cout << std::endl;
+	}
+	if (!location.methods.empty())
+	{
+		std::cout << "\t  Methods: ";
+		for (size_t i = 0; i < location.methods.size(); i++)
+		{
+			std::cout << location.methods[i];
+			if (i < location.methods.size() - 1)
+				std::cout << " ";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << "\t  Autoindex: " << (location.autoindex ? "on" : "off") << std::endl;
+	if (location.redirect_code != 0)
+		std::cout << "\t  Redirect: " << location.redirect_code << " "
+				<< location.redirect_url << std::endl;
+	if (!location.cgi_extension.empty())
+		std::cout << "\t  CGI Extension: " << location.cgi_extension << std::endl;
+	if (!location.cgi_path.empty())
+		std::cout << "\t  CGI Path: " << location.cgi_path << std::endl;
+}

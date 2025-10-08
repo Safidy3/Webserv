@@ -2,7 +2,6 @@
 #define CLIENT_HPP
 
 #include "../webserv.hpp"
-#include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 #include "Server.hpp"
 
@@ -11,10 +10,9 @@ class Client
 {
 private:
 	int				_fd;
-	std::string		_buffer_in;
+	std::string		_raw_request;
 	std::string		_buffer_out;
 	pollfd			_pollfd;
-	HTTPRequest		_request;
 	HTTPResponse	_response;
 	Server&			_server;
 	enum State { READING, WRITING, CLOSED } _state;
@@ -30,10 +28,12 @@ public:
 	Server&			getServer() const { return _server; }
 	int				getSocket() const { return _fd; }
 	State			getState() const { return _state; }
-	HTTPRequest&	getHTTPRequest() { return _request; }
+	std::string&	getRawRequest() { return _raw_request; }
 	pollfd&			getPollFD() { return _pollfd; }
 
 	void			setState(State state) { _state = state; }
+
+	void			printClient() const;
 };
 
 #endif

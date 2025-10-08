@@ -21,7 +21,8 @@ DIR_UTILS = ./utils
 OBJ_DIR = ./obj
 INC_DIR = ./include
 
-WEBSERV = ../main.cpp ConfigParser.cpp Client.cpp Server.cpp HTTPRequest.cpp HTTPResponse.cpp ServerManager.cpp
+WEBSERV = ../main.cpp Client.cpp Server.cpp HTTPRequest.cpp HTTPResponse.cpp ServerManager.cpp
+#  ErrorHandler.cpp ConfigParser.cpp
 
 SRC_WEBSERV = $(addprefix $(DIR_WEBSERV)/,$(WEBSERV))
 UTILS = $(DIR_UTILS)/libutils.a
@@ -46,7 +47,7 @@ $(NAME): $(OBJ_WEBSERV) $(UTILS)
 	@$(CXX) $(CXXFLAGS) -o $@ $(OBJ_WEBSERV) $(UTILS)
 
 clean:
-	@$(RM) $(OBJ_DIR)
+	@$(RM) $(OBJ_DIR) vgcore.*
 	@$(MAKE) -C $(DIR_UTILS) clean
 
 fclean: clean
@@ -62,7 +63,7 @@ runre: re
 	@./$(NAME)
 
 debug: all
-	@valgrind --track-origins=yes ./$(NAME)
+	@valgrind --track-origins=yes --leak-check=full ./$(NAME)
 
 # debug: all
 # 	@valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME)

@@ -32,7 +32,6 @@ class HttpResponseBuilder
         HttpResponseBuilder(const MimeTypes &types);
         ~HttpResponseBuilder();
 
-
         std::string getMimeType(const std::string &path);
         std::string buildResponse(const HttpRequest &req, const ServerConfig &serverConf, const LocationConfig &locationConf);
 };

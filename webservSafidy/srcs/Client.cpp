@@ -17,22 +17,13 @@ Client::Client(int fd, Server& server) : _fd(fd), _server(server), _state(READIN
 
 	// Set non-blocking mode
 	set_nonblocking(_fd);
-
-	// Get client address info (with error handling)
-	sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-	memset(&addr, 0, sizeof(addr));
-
-	if (getpeername(_fd, (sockaddr *)&addr, &addrlen) == 0)
-		std::cout << "New client: " << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << " FD: " << _fd << "\n";
-	else
-		std::cout << "New client with FD: " << _fd << " (could not get peer address: " << strerror(errno) << ")\n";
+	printClient();
 }
 
 Client::~Client()
 {
 	closeConnection();
-	std::cout << "Client with FD: " << _fd << " destroyed\n";
+	std::cout << "~Client FD " << _fd << " destroyed\n";
 }
 
 ssize_t Client::readData()
@@ -53,7 +44,7 @@ ssize_t Client::readData()
 		{
 			// Null-terminate and append to buffer
 			tempBuffer[receivedDataLength] = '\0';
-			_buffer_in.append(tempBuffer, receivedDataLength);
+			_raw_request.append(tempBuffer, receivedDataLength);
 			totalBytesRead += receivedDataLength;
 
 			// If we received less than the buffer size, we've read all available data
@@ -63,7 +54,6 @@ ssize_t Client::readData()
 		else if (receivedDataLength == 0)
 		{
 			// Connection closed by peer
-			std::cout << "Client FD " << _fd << " closed connection\n";
 			_state = CLOSED;
 			return 0;
 		}
@@ -82,19 +72,6 @@ ssize_t Client::readData()
 		}
 	}
 
-	// Only parse if we have data and haven't parsed yet
-	if (totalBytesRead > 0 && !_buffer_in.empty())
-	{
-		try
-		{
-			_request.parseHttpRequest(_buffer_in.c_str());
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "HTTP parsing error for client FD " << _fd << ": " << e.what() << "\n";
-			return -1;
-		}
-	}
 	return totalBytesRead;
 }
 
@@ -173,4 +150,16 @@ void	Client::closeConnection()
 		_state = CLOSED;
 		_pollfd.fd = -1; // Mark pollfd as invalid
 	}
+}
+
+void	Client::printClient() const
+{
+	sockaddr_in	addr;
+	socklen_t	addrlen = sizeof(addr);
+	memset(&addr, 0, sizeof(addr));
+	
+	if (getpeername(_fd, (sockaddr *)&addr, &addrlen) == 0)
+		std::cout << "*Client FD: " << _fd << " " << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << "\n";
+	else
+		std::cout << "Client FD: " << _fd << " (could not get peer address: " << strerror(errno) << ")\n";
 }

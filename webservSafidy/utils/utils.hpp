@@ -33,5 +33,8 @@ void set_nonblocking(int fd);
 std::string ftStrdup(const char* s);
 std::string ftReadFile(const std::string &path);
 std::vector<std::string> ftSplitStr(const std::string& str, const std::string& delimiter);
+bool ftFileExists(const std::string &path);
+bool ftIsFile(const std::string &path);
+bool ftIsDirectory(const std::string &path);
 
 #endif

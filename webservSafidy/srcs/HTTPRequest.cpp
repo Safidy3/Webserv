@@ -9,7 +9,10 @@ void	HTTPRequest::parseHttpRequest(const char *raw)
 
 	// 1. Parse request line
 	if (!std::getline(stream, line) || line.empty())
+	{
+		isValidRequest = false;
 		throw std::runtime_error("Invalid HTTP request: missing request line");
+	}
 	if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove \r
 	parseRequestLine(line);
 
@@ -34,8 +37,10 @@ void HTTPRequest::parseRequestLine(const std::string &requestLine)
 {
 	std::istringstream iss(requestLine);
 	if (!(iss >> method >> uri >> httpVersion))
+	{
+		isValidRequest = false;
 		throw std::runtime_error("Malformed request line");
-
+	}
 	parseUri(uri);
 }
 
@@ -104,20 +109,19 @@ void HTTPRequest::parseHostHeader(const std::string &hostHeader)
 
 void    HTTPRequest::printRequest() const
 {
-	std::cout << "Method: " << method << "\n";
-	std::cout << "URI: " << uri << "\n";
-	std::cout << "Query String: " << queryString << "\n";
-	std::cout << "Fragment: " << fragment << "\n";
-	std::cout << "HTTP Version: " << httpVersion << "\n";
-
+	std::cout << "\nRequest details:\n";
+	std::cout << "\tMethod: " << method << "\n";
+	std::cout << "\tURI: " << uri << "\n";
+	std::cout << "\tHTTP Version: " << httpVersion << "\n";
 	std::cout << "Headers:\n";
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
-		std::cout << it->first << ": " << it->second << "\n";
-
-	std::cout << "Host: " << host << "\n";
-	std::cout << "Port: " << port << "\n";
-	std::cout << "Content-Length: " << contentLength << "\n";
-	std::cout << "Boundary: " << boundary << "\n";
-
-	std::cout << "Body:\n" << body << "\n";
+		std::cout << "\t" << it->first << ": " << it->second << "\n";
+	
+	std::cout << "\n\tHost: " << host << "\n";
+	std::cout << "\tPort: " << port << "\n";
+	std::cout << "\tContent-Length: " << contentLength << "\n";
+	std::cout << "\tBoundary: " << boundary << "\n";
+	std::cout << "\tBody:\n" << body << "\n";
+	std::cout << "\tQuery String: " << queryString << "\n";
+	std::cout << "\tFragment: " << fragment << "\n";
 }

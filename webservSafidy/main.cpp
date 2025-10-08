@@ -12,15 +12,36 @@
 
 #include "webserv.hpp"
 #include "include/ConfigParser.hpp"
-#include "include/Server.hpp"
-#include "include/Client.hpp"
-#include "include/HTTPRequest.hpp"
-#include "include/HTTPResponse.hpp"
 #include "include/ServerManager.hpp"
+// #include "include/Server.hpp"
+// #include "include/Client.hpp"
+// #include "include/HTTPRequest.hpp"
+// #include "include/HTTPResponse.hpp"
 
-static const size_t	BUFFER_SIZE = 1024;
-static const int	MAX_PENDING_QUEUE = 10;
-static const int	MAX_CLIENTS = 100;
+MimeTypes loadMimeTypes(const std::string& path)
+{
+	MimeTypes mimeTypes;
+	std::ifstream file(path.c_str());
+	if (!file.is_open())
+		throw std::runtime_error("Cannot open MIME types file: " + path);
+
+	std::string line;
+	while (std::getline(file, line))
+	{
+		if (line.empty() || line[0] == '#')
+			continue; // Skip empty lines and comments
+
+		std::istringstream iss(line);
+		std::string type;
+		if (!(iss >> type))
+			continue; // Skip malformed lines
+
+		std::string extension;
+		while (iss >> extension)
+			mimeTypes[extension] = type;
+	}
+	return mimeTypes;
+}
 
 int main(int argc, char **argv)
 {
@@ -28,28 +49,34 @@ int main(int argc, char **argv)
 	std::string mimeTypesPath = "./conf.d/mime.type";
 
 	if (argc == 2 && argv[1][0])
-		configPath = argv[1];  
+		configPath = argv[1];
 	else if (argc == 1)
-		configPath = "./conf.d/webserv.conf";
+		configPath = "./conf.d/webservTest.conf";
 	else
-		return (std::cerr << "Use: " << argv[0]
-				<< " [config_file]" << std::endl, EXIT_FAILURE);
+		return (std::cerr << "Use: " << argv[0] << " [config_file]" << std::endl, EXIT_FAILURE);
 	try
 	{
-		ConfigParser	parser(configPath, mimeTypesPath);
-		HttpConfig		config = parser.parse();
-		MimeTypes		types;
-		ServerManager	serverManager;
+		MimeTypes		mimes;
+		ConfigParser	parser;
+		ServersConfig_t	config;
+		ServerManager	pollManager;
 
-		parser.loadMimeTypes(types);
-		for (size_t i = 0; i < config.servers.size(); ++i)
-			serverManager.addServer(config.servers[i].listenPort, MAX_CLIENTS);
+		config = parser.parse(configPath);
+		mimes = loadMimeTypes(mimeTypesPath);
 
-		serverManager.pollEvents();
+		// Access parsed data
+		for (size_t i = 0; i < config.size(); i++)
+		{
+			pollManager.addServer(config[i], mimes);
+			std::cout << "\n=========================================\n\n";
+		}
+
+		pollManager.pollEvents();
+
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
-		return (std::cerr << "Error: " << e.what() << std::endl, EXIT_FAILURE);
+		std::cerr << "Error: " << e.what() << std::endl;
 	}
 	return 0;
 }
