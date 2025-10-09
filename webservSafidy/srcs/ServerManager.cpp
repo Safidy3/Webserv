@@ -105,20 +105,23 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 		if (bytes_read > 0)
 		{
 			HTTPResponse		response;
+			HTTPRequestParser	parser;
 			HTTPRequest			request;
 
-			try
+			parser.parse(client->getRawRequest());
+
+			if (parser.getState() == HTTPRequestParser::STATE_COMPLETE)
+				request = parser.getRequest();
+			else if (parser.getState() == HTTPRequestParser::STATE_ERROR)
 			{
-				request.parseHttpRequest(client->getRawRequest().c_str());
-			}
-			catch(const std::exception& e)
-			{
-				std::cerr << e.what() << '\n';
+				std::cerr << "Error parsing request: " << parser.getErrorMessage() << "\n";
 				response = ResponseFactory::badRequest_400();
 				client->sendData(response.build());
 				removeClient(client);
 				return;
 			}
+
+			// request.printRequest();
 
 			HTTPMethodHandler MethodHandler(request, client->getServer());
 			response = MethodHandler.generateResponse();
@@ -169,7 +172,7 @@ void ServerManager::pollEvents(bool debug)
 			// Orphaned fd - shouldn't happen but clean it up
 			else
 			{
-				std::cerr << "Warning: Found orphaned fd " << fd << " in poll array\n";
+				// std::cerr << "Warning: Found orphaned fd " << fd << " in poll array\n";
 				for (std::vector<pollfd>::iterator p_it = _poolFds.begin(); p_it != _poolFds.end(); ++p_it)
 				{
 					if (p_it->fd == fd)
@@ -180,6 +183,7 @@ void ServerManager::pollEvents(bool debug)
 				}
 			}
 		}
+		// std::cerr << "\n--- Poll cycle complete ---\n\n";
 		if (debug)
 			break;
 		continue;

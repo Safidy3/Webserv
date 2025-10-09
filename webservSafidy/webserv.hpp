@@ -19,6 +19,7 @@
 #include <map>
 #include <algorithm>
 #include <ctime>
+#include <cctype>
 
 #include <iostream>		// for cout/cerr
 #include <arpa/inet.h>	// for ip inet_pton()

@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	if (argc == 2 && argv[1][0])
 		configPath = argv[1];
 	else if (argc == 1)
-		configPath = "./conf.d/webservTest.conf";
+		configPath = "./conf.d/test2.conf";
 	else
 		return (std::cerr << "Use: " << argv[0] << " [config_file]" << std::endl, EXIT_FAILURE);
 	try

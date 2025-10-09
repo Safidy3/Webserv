@@ -49,6 +49,7 @@ $(NAME): $(OBJ_WEBSERV) $(UTILS)
 clean:
 	@$(RM) $(OBJ_DIR) vgcore.*
 	@$(MAKE) -C $(DIR_UTILS) clean
+	@clear
 
 fclean: clean
 	@$(RM) $(NAME)
@@ -57,6 +58,7 @@ fclean: clean
 re: fclean all
 
 run: all
+	@clear
 	@./$(NAME)
 
 runre: re
