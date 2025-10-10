@@ -15,6 +15,18 @@ private:
 	std::vector<Client *>	_clients;
 	const MimeTypes*		_mimeTypes;
 
+
+	std::string getParentPath(const std::string& fullPath) const
+	{
+		size_t lastSlash = fullPath.find_last_of("/\\"); // Handles both '/' and '\'
+		if (lastSlash == std::string::npos)
+			return "";
+		std::string parentPath = fullPath.substr(0, lastSlash);
+		if (parentPath.empty())
+			return "/";
+		return parentPath;
+	}
+
 public:
 	Server(ServerConfig_t config, const MimeTypes* mimeTypes = NULL);
 	~Server();
@@ -25,9 +37,44 @@ public:
 	Client*	acceptClient();
 	void	removeClient(Client* client);
 
+	/*
+		root      : /www
+		location  : /html
+		uri       : /html/index.html || /html
+	*/
+
+	bool	isValidLocation(const std::string& location) const;
 	bool	isValidMethod(const std::string& path, const std::string& method) const;
 	bool	isValidUri(const std::string& path) const;
 	bool	isValidContentType(const std::string& contentType) const;
+	bool	isUriValidFile(const std::string& uri) const
+	{
+		std::string fullPath;
+
+		for (std::vector<LocationConfig_t>::const_iterator it = _config.locations.begin(); it != _config.locations.end(); ++it)
+		{
+			if (it->path == "/")
+				fullPath = _config.root + uri.substr(1);
+			else if (uri.find(it->path) == 0) // uri starts with location path
+				fullPath = it->root + uri.substr(it->path.length());
+			else
+				continue;
+			if (ftIsFile(fullPath))
+				break;
+		}
+		if (ftIsFile(fullPath))
+		{
+			// std::cout << "File found: " << fullPath << std::endl;
+			std::string location = getParentPath(uri);
+			if (isValidLocation(location))
+			{
+				// std::cout << "Valid location found: " << location << std::endl;
+				return true;
+			}
+		}
+		// std::cout << "Location not found for URI: " << uri << std::endl << std::endl;
+		return false;
+	};
 
 	const std::string					getRoot() const { return _config.root; }
 	const LocationConfig_t*				getLocationsConfig(const std::string& path) const;
@@ -35,23 +82,7 @@ public:
 	const std::string					getLocationRoot(const std::string& path) const;
 	const std::string*					getErrorPage(int code) const;
 	const std::vector<std::string>*		getIndexFiles() const { return &_config.index; };
-
-	const std::string					getLocationValidIndex(const std::string& locationPath) const
-	{
-		std::string fullPath = getLocationRoot(locationPath);
-		std::cout << "Full path for locationPath '" << locationPath << "': " << fullPath << std::endl;
-		
-		const LocationConfig_t* loc = getLocationsConfig(locationPath);
-		if (!loc)
-			return "";
-		for (size_t i = 0; i < loc->index.size(); i++)
-		{
-			fullPath += loc->index[i];
-			if (ftFileExists(fullPath))
-				return fullPath;
-		}
-		return "";
-	}
+	const std::string					getLocationValidIndex(const std::string& locationPath) const;
 
 	int									getSocket() const { return _fd; }
 	pollfd&								getPollFD() { return _pollfd; }
@@ -64,4 +95,4 @@ public:
 
 };
 
-#endif // SERVER_HPP
+#endif

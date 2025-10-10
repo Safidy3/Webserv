@@ -23,28 +23,37 @@ public:
 			return GETHandler();
 		else
 			return ResponseFactory::methodNotAllowed_405();
-		// else if (request.method == "POST")
-		// 	return POSTHandler();
-		// else if (request.method == "DELETE")
-		// 	return DELETEHandler();
 	};
 
+	/*
+	to do:
+		- handle cgi
+		- handle 403 error
+	*/
 	HTTPResponse	GETHandler()
 	{
-		std::string	relativePath;
+		std::string	fullPathURI;
+	
 		if (!server.isValidUri(request.uri))
 			return ResponseFactory::notFound_404();
 
-		relativePath = server.getLocationValidIndex(request.uri);
+		fullPathURI = server.getLocationValidIndex(request.uri);
 		if (!server.isValidMethod(request.uri, request.method))
 			return ResponseFactory::methodNotAllowed_405();
-		if (ftIsFile(relativePath))
-			return ResponseFactory::ok().bodyFromFile(relativePath).autoHeaders();
-		// else if (ftIsDirectory(relativePath))
-		// 	return ResponseFactory::ok().bodyFromDirectory(relativePath).autoHeaders();
+		if (ftIsFile(fullPathURI))
+			return ResponseFactory::ok().bodyFromFile(fullPathURI).autoHeaders();
 		else
 			return ResponseFactory::forbidden_403();
 	}
 };
 
 #endif
+
+		// else if (request.method == "POST")
+		// 	return POSTHandler();
+		// else if (request.method == "DELETE")
+		// 	return DELETEHandler();
+
+
+		// else if (ftIsDirectory(fullPathURI))
+		// 	return ResponseFactory::ok().bodyFromDirectory(fullPathURI).autoHeaders();

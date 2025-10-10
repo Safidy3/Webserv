@@ -23,7 +23,7 @@ Client::Client(int fd, Server& server) : _fd(fd), _server(server), _state(READIN
 Client::~Client()
 {
 	closeConnection();
-	std::cout << "~Client FD " << _fd << " destroyed\n";
+	// std::cout << "~Client FD " << _fd << " destroyed\n";
 }
 
 ssize_t Client::readData()
@@ -133,7 +133,7 @@ ssize_t Client::sendData(const std::string &response)
 
 	if (totalSent > 0)
 	{
-		std::cout << "Successfully sent " << totalSent << " bytes to client FD " << _fd << "\n";
+		// std::cout << "Successfully sent " << totalSent << " bytes to client FD " << _fd << "\n";
 		_state = WRITING; // Update state after successful send
 	}
 

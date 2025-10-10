@@ -1,7 +1,8 @@
 import requests
 
 # Define the server's URL
-location = '/test.py?name=Safidy&lang=en'
+location = '/downloads'
+location1 = '/test.py?name=Safidy&lang=en'
 server_url = 'http://localhost:8080' + location
 
 def get_request(url):
@@ -11,7 +12,7 @@ def get_request(url):
 	except requests.exceptions.RequestException as e:
 		print(f"GET request failed: {e}")
 		return None
-	
+
 def post_request(url, data):
 	try:
 		response = requests.post(url, data=data)
@@ -26,6 +27,15 @@ def delete_request(url):
 		print(f"\tDELETE Response: {response.status_code}")
 	except requests.exceptions.RequestException as e:
 		print(f"DELETE request failed: {e}")
+		return None
+
+def invalid_get_request(url):
+	try:
+		# Sending an invalid GET request by passing malformed headers
+		response = requests.get(url, headers={'Invalid-Header': '\x00'})
+		print(f"\tInvalid GET Response: {response.status_code}")
+	except requests.exceptions.RequestException as e:
+		print(f"Invalid GET request failed: {e}")
 		return None
 
 # Function to test the server response
@@ -45,9 +55,9 @@ def test_server_response(url):
 		print(f"Failed to connect to the server: {e}")
 
 
-
 # Run the test
 # test_server_response(server_url)
-# get_request(server_url)
+get_request(server_url)
 # post_request(server_url, data={'key': 'value'})
-delete_request(server_url)
+# delete_request(server_url)
+# invalid_get_request(server_url)

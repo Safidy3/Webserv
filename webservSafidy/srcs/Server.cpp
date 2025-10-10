@@ -18,7 +18,12 @@ Server::Server(ServerConfig_t config, const MimeTypes* mimeTypes) :
 	while (it != _config.locations.end())
 	{
 		if (it->root.empty())
-			it->root = _config.root + it->path;
+		{
+			if (it->path[0] == '/')
+				it->root = _config.root + it->path.substr(1);
+			else
+				it->root = _config.root + it->path;
+		}
 		if (it->root[it->root.size() - 1] != '/')
 			it->root += '/';
 		++it;
@@ -106,27 +111,59 @@ void	Server::removeClient(Client* client)
 		std::cerr << "Client not found in server's client list\n";
 }
 
-const LocationConfig_t*	Server::getLocationsConfig(const std::string& path) const
+const LocationConfig_t*	Server::getLocationsConfig(const std::string& uri) const
 {
+	std::string path = uri;
+	if (isUriValidFile(uri))
+		path = getParentPath(uri);
 	for (size_t i = 0; i < _config.locations.size(); ++i)
 		if (path == _config.locations[i].path)
 			return &_config.locations[i];
 	return NULL;
 }
 
-const std::vector<std::string>*	Server::getLocationMethods(const std::string& path) const
+const std::vector<std::string>*	Server::getLocationMethods(const std::string& uri) const
 {
+	std::string path = uri;
+	if (isUriValidFile(uri))
+		path = getParentPath(uri);
 	const LocationConfig_t* loc = getLocationsConfig(path);
 	if (loc)
 		return &loc->methods;
 	return NULL;
 }
 
-const std::string	Server::getLocationRoot(const std::string& path) const
+const std::string	Server::getLocationRoot(const std::string& uri) const
 {
+	std::string path = uri;
+	if (isUriValidFile(uri))
+		path = getParentPath(uri);
 	const LocationConfig_t* loc = getLocationsConfig(path);
 	if (loc)
 		return loc->root;
+	return "";
+}
+
+const std::string	Server::getLocationValidIndex(const std::string& locationPath) const
+{
+	if (isUriValidFile(locationPath))
+	{
+		if (locationPath[0] == '/')
+			return _config.root + locationPath.substr(1);
+		else
+			return _config.root + locationPath;
+	}
+
+	std::string fullPath = getLocationRoot(locationPath);
+	const LocationConfig_t* loc = getLocationsConfig(locationPath);
+	if (!loc)
+		return "";
+	for (size_t i = 0; i < loc->index.size(); i++)
+	{
+		fullPath += loc->index[i];
+		if (ftFileExists(fullPath))
+			return fullPath;
+	}
 	return "";
 }
 
@@ -138,8 +175,20 @@ const std::string*	Server::getErrorPage(int code) const
 	return NULL;
 }
 
-bool	Server::isValidMethod(const std::string& path, const std::string& method) const
+bool	Server::isValidLocation(const std::string& location) const
 {
+	for (size_t i = 0; i < _config.locations.size(); ++i)
+		if (location == _config.locations[i].path)
+			return true;
+	return false;
+}
+
+bool	Server::isValidMethod(const std::string& uri, const std::string& method) const
+{
+	std::string path = uri;
+	if (isUriValidFile(uri))
+		path = getParentPath(uri);
+	
 	const std::vector<std::string>* methods = getLocationMethods(path);
 	if (!methods)
 		return false;
@@ -158,6 +207,8 @@ bool	Server::isValidContentType(const std::string& contentType) const
 
 bool	Server::isValidUri(const std::string& path) const
 {
+	if (isUriValidFile(path))
+		return true;
 	return getLocationsConfig(path) != NULL;
 };
 

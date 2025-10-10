@@ -6,11 +6,11 @@
 class HTTPResponse
 {
 private:
-	int statusCode_;
-	std::string reasonPhrase_;
-	std::string httpVersion_;
-	std::map<std::string, std::string> headers_;
-	std::string body_;
+	int									statusCode_;
+	std::string							reasonPhrase_;
+	std::string							httpVersion_;
+	std::map<std::string, std::string>	headers_;
+	std::string							body_;
 
 	std::string getReasonPhrase(int code) const
 	{

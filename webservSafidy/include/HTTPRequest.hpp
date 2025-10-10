@@ -176,9 +176,9 @@ public:
 private:
 	ParserState state;
 	HTTPRequest request;
+	std::string	errorMessage;
 	std::string buffer;
-	size_t bodyBytesRead;
-	std::string errorMessage;
+	size_t		bodyBytesRead;
 
 	bool parseRequestLine(const std::string& line)
 	{

@@ -170,7 +170,7 @@ void ConfigParser::parseServerDirective(const std::string &directive, ServerConf
 	else if (directive == "server_name")
 		server.server_name = value;
 	else if (directive == "root")
-		server.root = value;
+		server.root = (value[value.size() - 1] == '/') ? value : value + '/';
 	else if (directive == "log_path")
 		server.log_path = value;
 	else if (directive == "index")

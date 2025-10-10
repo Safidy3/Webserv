@@ -104,6 +104,7 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 		ssize_t bytes_read = client->readData();
 		if (bytes_read > 0)
 		{
+			Server&				server = client->getServer();
 			HTTPResponse		response;
 			HTTPRequestParser	parser;
 			HTTPRequest			request;
@@ -123,7 +124,7 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 
 			// request.printRequest();
 
-			HTTPMethodHandler MethodHandler(request, client->getServer());
+			HTTPMethodHandler MethodHandler(request, server);
 			response = MethodHandler.generateResponse();
 			client->sendData(response.build());
 		}
