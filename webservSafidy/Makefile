@@ -21,7 +21,7 @@ DIR_UTILS = ./utils
 OBJ_DIR = ./obj
 INC_DIR = ./include
 
-WEBSERV = ../main.cpp Client.cpp Server.cpp HTTPRequest.cpp HTTPResponse.cpp ServerManager.cpp
+WEBSERV = ../main.cpp Client.cpp Server.cpp HTTPRequest.cpp HTTPResponse.cpp ServerManager.cpp CGIHandler.cpp
 #  ErrorHandler.cpp ConfigParser.cpp
 
 SRC_WEBSERV = $(addprefix $(DIR_WEBSERV)/,$(WEBSERV))

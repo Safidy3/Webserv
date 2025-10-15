@@ -76,6 +76,14 @@ public:
 		return *this;
 	}
 
+	HTTPResponse &headers(const std::map<std::string, std::string> &headers)
+	{
+		for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+			 it != headers.end(); ++it)
+			headers_[it->first] = it->second;
+		return *this;
+	}
+
 	HTTPResponse &contentType(const std::string &type)
 	{
 		return header("Content-Type", type);
@@ -234,13 +242,20 @@ public:
 	}
 
 	// Getters
-	int getStatusCode() const { return statusCode_; }
-	std::string getBody() const { return body_; }
-	std::string getHeader(const std::string &key) const
+	int			getStatusCode() const { return statusCode_; }
+	std::string	getBody() const { return body_; }
+	std::string	getHeader(const std::string &key) const
 	{
 		std::map<std::string, std::string>::const_iterator it = headers_.find(key);
 		return (it != headers_.end()) ? it->second : "";
 	}
+
+	void printResponse() const
+	{
+		std::cout << "=== HTTP Response ===\n";
+		std::cout << build() << "\n=====================\n";
+	}
+	
 };
 
 // Factory class for common responses
@@ -299,6 +314,40 @@ public:
 		return HTTPResponse()
 			.status(406)
 			.html("<html><body><h1>406 Not Acceptable</h1></body></html>")
+			.autoHeaders();
+	}
+
+	/**********************************************************************************************/
+
+	static HTTPResponse internalServerError_500()
+	{
+		return HTTPResponse()
+			.status(500)
+			.html("<html><body><h1>500 Internal Server Error</h1></body></html>")
+			.autoHeaders();
+	}
+
+	static HTTPResponse badGateway_502()
+	{
+		return HTTPResponse()
+			.status(502)
+			.html("<html><body><h1>502 Bad Gateway</h1></body></html>")
+			.autoHeaders();
+	}
+
+	static HTTPResponse serviceUnavailable_503()
+	{
+		return HTTPResponse()
+			.status(503)
+			.html("<html><body><h1>503 Service Unavailable</h1></body></html>")
+			.autoHeaders();
+	}
+
+	static HTTPResponse gatewayTimeout_504()
+	{
+		return HTTPResponse()
+			.status(504)
+			.html("<html><body><h1>504 Gateway Timeout</h1></body></html>")
 			.autoHeaders();
 	}
 

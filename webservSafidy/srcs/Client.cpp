@@ -17,7 +17,7 @@ Client::Client(int fd, Server& server) : _fd(fd), _server(server), _state(READIN
 
 	// Set non-blocking mode
 	set_nonblocking(_fd);
-	printClient();
+	// printClient();
 }
 
 Client::~Client()

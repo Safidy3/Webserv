@@ -10,7 +10,7 @@ public:
 
 	std::string							method;
 	std::string							uri;
-	std::string							path;
+	std::string							uriPath;
 	std::string							version;
 	std::map<std::string, std::string>	headers;
 	std::map<std::string, std::string>	queryParams;
@@ -38,8 +38,12 @@ public:
 	void	printRequest() const
 	{
 		std::cout << "----- HTTP Request -----\n";
-		std::cout << "Request:\n";
-		std::cout << "\t" << method << " " << uri << " " << version << "\n";
+		std::cout << "Request: ";
+
+		std::cout << method << " " << uri << " " << version << "\n";
+		std::cout << "\t" << "method  : " << method << "\n";
+		std::cout << "\t" << "uriPath : " << uriPath << "\n";
+		std::cout << "\t" << "version : " << version << "\n";
 
 		if (!queryParams.empty())
 			std::cout << "Query Parameters:\n";
@@ -221,11 +225,11 @@ private:
 		
 		if (queryStart == std::string::npos)
 		{
-			request.path = uri;
+			request.uriPath = uri;
 			return;
 		}
 		
-		request.path = uri.substr(0, queryStart);
+		request.uriPath = uri.substr(0, queryStart);
 		std::string queryString = uri.substr(queryStart + 1);
 		
 		size_t pos = 0;

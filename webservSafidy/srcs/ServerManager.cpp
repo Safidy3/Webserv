@@ -126,6 +126,9 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 
 			HTTPMethodHandler MethodHandler(request, server);
 			response = MethodHandler.generateResponse();
+
+			// response.printResponse();
+		
 			client->sendData(response.build());
 		}
 		removeClient(client);

@@ -57,7 +57,8 @@ def test_server_response(url):
 
 # Run the test
 # test_server_response(server_url)
-get_request(server_url)
+# get_request(server_url)
 # post_request(server_url, data={'key': 'value'})
 # delete_request(server_url)
 # invalid_get_request(server_url)
+print("Testing GET request with query parameters:")

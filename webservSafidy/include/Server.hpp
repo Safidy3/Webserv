@@ -89,6 +89,7 @@ public:
 	ServerConfig_t						getConfig() const { return _config; }
 	int									getPort() const { return _config.listen_port; }
 	size_t								getClientCount() const { return _clients.size(); }
+	std::string							getName() const { return _config.server_name; };
 
 	void 							printServer();
 	void							printLocation(const LocationConfig_t &location);

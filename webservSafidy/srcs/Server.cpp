@@ -207,6 +207,7 @@ bool	Server::isValidContentType(const std::string& contentType) const
 
 bool	Server::isValidUri(const std::string& path) const
 {
+	// std::cout << "isValidUri check for path: " << path << std::endl;
 	if (isUriValidFile(path))
 		return true;
 	return getLocationsConfig(path) != NULL;
