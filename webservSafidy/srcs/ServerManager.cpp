@@ -122,7 +122,7 @@ void	ServerManager::handleClientSocket(Client* client, pollfd& poll_fd)
 				return;
 			}
 
-			// request.printRequest();
+			request.printRequest(false);
 
 			HTTPMethodHandler MethodHandler(request, server);
 			response = MethodHandler.generateResponse();

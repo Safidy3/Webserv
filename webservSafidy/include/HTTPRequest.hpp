@@ -35,9 +35,9 @@ public:
 		return "";
 	}
 
-	void	printRequest() const
+	void	printRequest(bool print_header = true) const
 	{
-		std::cout << "----- HTTP Request -----\n";
+		std::cout << "\n----- HTTP Request -----\n\n";
 		std::cout << "Request: ";
 
 		std::cout << method << " " << uri << " " << version << "\n";
@@ -51,16 +51,19 @@ public:
 			 it != queryParams.end(); ++it)
 			std::cout << "\t" << it->first << ": " << it->second << "\n";
 
-		std::cout << "Headers:\n";
-		for (std::map<std::string, std::string>::const_iterator it = headers.begin();
-			 it != headers.end(); ++it)
-			std::cout << "\t" << it->first << ": " << it->second << "\n";
+		if (print_header)
+		{
+			std::cout << "Headers:\n";
+			for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+				 it != headers.end(); ++it)
+				std::cout << "\t" << it->first << ": " << it->second << "\n";
+	
+			std::cout << "Body:\n";
+			if (!body.empty())
+				std::cout  << "\t" << "\n" << body << "\n";
+		}
 
-		std::cout << "Body:\n";
-		if (!body.empty())
-			std::cout  << "\t" << "\n" << body << "\n";
-
-		std::cout << "------------------------\n";
+		std::cout << "\n------------------------\n\n";
 	}
 
 private:

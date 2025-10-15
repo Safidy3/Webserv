@@ -44,10 +44,8 @@ public:
 
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
-		{
-			std::cout << "Executing CGI script: " << relativePath << std::endl;
 			return cgiHandler.executeCGI(relativePath);
-		}
+
 		if (ftIsFile(relativePath))
 			return ResponseFactory::ok().bodyFromFile(relativePath).autoHeaders();
 		else
@@ -71,5 +69,6 @@ public:
 		return ResponseFactory::methodNotAllowed_405();
 	}
 };
+
 
 #endif
