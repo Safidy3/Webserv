@@ -1,12 +1,9 @@
-#!/usr/bin/env python3
-# import cgi
 import os
 from urllib.parse import urlparse, parse_qs
 
 def parse_url_query(query):
 	query_params = parse_qs(query) # Parse the query string into a dictionary
 	return {key: value[0] for key, value in query_params.items()}
-
 
 print("Content-Type: text/html\n")
 print("<html><body>")

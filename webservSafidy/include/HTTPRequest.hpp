@@ -12,6 +12,7 @@ public:
 	std::string							uri;
 	std::string							uriPath;
 	std::string							version;
+	std::string							queryString;
 	std::map<std::string, std::string>	headers;
 	std::map<std::string, std::string>	queryParams;
 	std::string							body;
@@ -44,12 +45,7 @@ public:
 		std::cout << "\t" << "method  : " << method << "\n";
 		std::cout << "\t" << "uriPath : " << uriPath << "\n";
 		std::cout << "\t" << "version : " << version << "\n";
-
-		if (!queryParams.empty())
-			std::cout << "Query Parameters:\n";
-		for (std::map<std::string, std::string>::const_iterator it = queryParams.begin();
-			 it != queryParams.end(); ++it)
-			std::cout << "\t" << it->first << ": " << it->second << "\n";
+		std::cout << "\t" << "QueryStr: " << queryString << "\n\n";
 
 		if (print_header)
 		{
@@ -58,10 +54,16 @@ public:
 				 it != headers.end(); ++it)
 				std::cout << "\t" << it->first << ": " << it->second << "\n";
 		}
+		std::cout << "\n";
 
-			std::cout << "Body:\n";
-			if (!body.empty())
-				std::cout  << "\t" << body << "\n";
+		if (!body.empty())
+			std::cout  << "Body: " << body << "\n\n";
+
+		if (!queryParams.empty())
+			std::cout << "Query Parameters:\n";
+		for (std::map<std::string, std::string>::const_iterator it = queryParams.begin();
+			 it != queryParams.end(); ++it)
+			std::cout << "\t" << it->first << ": " << it->second << "\n";
 
 		std::cout << "\n------------------------\n\n";
 	}
@@ -147,16 +149,13 @@ public:
 					}
 				}
 				if (bodyBytesRead >= request.contentLength)
-				{
 					state = STATE_COMPLETE;
-				}
 				else
 					break;
 			}
 		}
 
-		std::cout << "body : " << request.body << " parsed \n";
-		parseRequestLine(request.body);
+		parseQuerys(request.body);
 		return state;
 	}
 
@@ -196,6 +195,7 @@ private:
 		std::istringstream	iss(line);
 		std::string			method, uri, version;
 
+		std::cout << "Query Param : " << line << "\n";
 		if (!(iss >> method >> uri >> version))
 		{
 			errorMessage = "Invalid request line";
@@ -226,6 +226,34 @@ private:
 		return true;
 	}
 
+	void parseQuerys(const std::string& queryString)
+	{
+		size_t pos = 0;
+		while (pos < queryString.length())
+		{
+			size_t ampPos = queryString.find('&', pos);
+			if (ampPos == std::string::npos)
+				ampPos = queryString.length();
+
+			std::string param = queryString.substr(pos, ampPos - pos);			
+			size_t eqPos = param.find('=');
+			if (eqPos != std::string::npos)
+			{
+				std::string key = param.substr(0, eqPos);
+				std::string value = param.substr(eqPos + 1);
+
+				key = urlDecode(key);
+				value = urlDecode(value);
+
+				request.queryParams[key] = value;
+			}
+			else if (!param.empty())
+				request.queryParams[urlDecode(param)] = "";
+			
+			pos = ampPos + 1;
+		}
+	}
+
 	void parseQueryParams(const std::string& uri)
 	{
 		size_t queryStart = uri.find('?');
@@ -237,33 +265,8 @@ private:
 		}
 		
 		request.uriPath = uri.substr(0, queryStart);
-		std::string queryString = uri.substr(queryStart + 1);
-		
-		size_t pos = 0;
-		while (pos < queryString.length())
-		{
-			size_t ampPos = queryString.find('&', pos);
-			if (ampPos == std::string::npos)
-				ampPos = queryString.length();
-			
-			std::string param = queryString.substr(pos, ampPos - pos);
-			
-			size_t eqPos = param.find('=');
-			if (eqPos != std::string::npos)
-			{
-				std::string key = param.substr(0, eqPos);
-				std::string value = param.substr(eqPos + 1);
-				
-				key = urlDecode(key);
-				value = urlDecode(value);
-				
-				request.queryParams[key] = value;
-			}
-			else if (!param.empty())
-				request.queryParams[urlDecode(param)] = "";
-			
-			pos = ampPos + 1;
-		}
+		request.queryString = uri.substr(queryStart + 1);
+		parseQuerys(request.queryString);
 	}
 
 	static std::string urlDecode(const std::string& encoded)

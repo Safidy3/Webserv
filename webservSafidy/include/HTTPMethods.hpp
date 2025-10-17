@@ -27,6 +27,8 @@ public:
 			return GETHandler();
 		else if (request.method == "POST")
 			return POSTHandler();
+		else if (request.method == "DELETE")
+			return DELETEHandler();
 		else
 			return ResponseFactory::methodNotAllowed_405();
 	}
@@ -65,8 +67,16 @@ public:
 
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
+		{
+			// add req.query in a csv file
 			return cgiHandler.executeCGI(relativePath);
+		}
 
+		return ResponseFactory::methodNotAllowed_405();
+	}
+
+	HTTPResponse DELETEHandler()
+	{
 		return ResponseFactory::methodNotAllowed_405();
 	}
 };
