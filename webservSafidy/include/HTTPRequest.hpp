@@ -57,11 +57,11 @@ public:
 			for (std::map<std::string, std::string>::const_iterator it = headers.begin();
 				 it != headers.end(); ++it)
 				std::cout << "\t" << it->first << ": " << it->second << "\n";
-	
+		}
+
 			std::cout << "Body:\n";
 			if (!body.empty())
-				std::cout  << "\t" << "\n" << body << "\n";
-		}
+				std::cout  << "\t" << body << "\n";
 
 		std::cout << "\n------------------------\n\n";
 	}
@@ -138,8 +138,7 @@ public:
 				{
 					size_t bytesNeeded = request.contentLength - bodyBytesRead;
 					size_t bytesAvailable = buffer.length();
-					size_t bytesToRead = (bytesAvailable < bytesNeeded) ? 
-										bytesAvailable : bytesNeeded;
+					size_t bytesToRead = (bytesAvailable < bytesNeeded) ? bytesAvailable : bytesNeeded;
 					if (bytesToRead > 0)
 					{
 						request.body += buffer.substr(0, bytesToRead);
@@ -148,11 +147,16 @@ public:
 					}
 				}
 				if (bodyBytesRead >= request.contentLength)
+				{
 					state = STATE_COMPLETE;
+				}
 				else
 					break;
 			}
 		}
+
+		std::cout << "body : " << request.body << " parsed \n";
+		parseRequestLine(request.body);
 		return state;
 	}
 
@@ -189,9 +193,9 @@ private:
 
 	bool parseRequestLine(const std::string& line)
 	{
-		std::istringstream iss(line);
-		std::string method, uri, version;
-		
+		std::istringstream	iss(line);
+		std::string			method, uri, version;
+
 		if (!(iss >> method >> uri >> version))
 		{
 			errorMessage = "Invalid request line";
@@ -256,9 +260,7 @@ private:
 				request.queryParams[key] = value;
 			}
 			else if (!param.empty())
-			{
 				request.queryParams[urlDecode(param)] = "";
-			}
 			
 			pos = ampPos + 1;
 		}
@@ -293,33 +295,33 @@ private:
 			errorMessage = "Invalid header format";
 			return false;
 		}
-		
+
 		std::string name = line.substr(0, colonPos);
 		std::string value = line.substr(colonPos + 1);
-		
+
 		// Trim leading/trailing whitespace from value
 		size_t start = value.find_first_not_of(" \t");
 		size_t end = value.find_last_not_of(" \t");
-		
+
 		if (start != std::string::npos)
 			value = value.substr(start, end - start + 1);
 		else
 			value.clear();
-		
+
 		// Convert header name to lowercase for case-insensitive lookup
 		std::string lowerName = name;
 		for (size_t i = 0; i < lowerName.length(); ++i)
 			lowerName[i] = std::tolower(lowerName[i]);
-		
+
 		request.headers[lowerName] = value;
-		
+
 		// Extract Content-Length if present
 		if (lowerName == "content-length")
 		{
 			std::istringstream iss(value);
 			iss >> request.contentLength;
 		}
-		
+
 		return true;
 	}
 };

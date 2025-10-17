@@ -15,9 +15,9 @@ class CGIEnvironment
 {
 public:
 	static std::map<std::string, std::string> buildEnvironment(
-		const HTTPRequest &request,
-		const Server &server,
-		const std::string &scriptPath)
+		const HTTPRequest	&request,
+		const Server		&server,
+		const std::string	&scriptPath)
 	{
 		std::map<std::string, std::string> env;
 
@@ -25,7 +25,10 @@ public:
 		env["REQUEST_METHOD"] = request.method;
 		env["SCRIPT_NAME"] = request.uri;
 		env["SCRIPT_FILENAME"] = scriptPath;
-		env["QUERY_STRING"] = buildQueryString(request.queryParams);
+		if (request.method == "GET")
+			env["QUERY_STRING"] = buildQueryString(request.queryParams);
+		else
+			env["QUERY_STRING"] = request.body;
 		env["SERVER_NAME"] = server.getName();
 		env["SERVER_PORT"] = server.getPort();
 		env["SERVER_PROTOCOL"] = "HTTP/1.1";
@@ -64,7 +67,8 @@ public:
 private:
 	static std::string buildQueryString(const std::map<std::string, std::string> &params)
 	{
-		std::string query;
+		std::string	query;
+
 		for (std::map<std::string, std::string>::const_iterator it = params.begin();
 			 it != params.end(); ++it)
 		{
@@ -88,23 +92,23 @@ class CGIExecutor
 public:
 	struct CGIResult
 	{
-		int exitCode;
-		std::string bodyOutput; // Only the body from CGI script
-		std::string errors;
-		bool timedOut;
+		int			exitCode;
+		std::string	bodyOutput; // Only the body from CGI script
+		std::string	errors;
+		bool		timedOut;
 
 		CGIResult() : exitCode(-1), timedOut(false) {}
 	};
 
 	static CGIResult executeCGI(
-		const std::string &scriptPath,
-		const std::map<std::string, std::string> &environment,
-		const std::string &requestBody,
-		int timeoutSeconds = 30)
+		const std::string							&scriptPath,
+		const std::map<std::string, std::string>	&environment,
+		const std::string							&requestBody,
+		int											timeoutSeconds = 30)
 	{
-		CGIResult result;
-		int outputPipe[2]; // Pipe for capturing stdout
-		int errorPipe[2];  // Pipe for capturing stderr
+		CGIResult	result;
+		int			outputPipe[2]; // Pipe for capturing stdout
+		int			errorPipe[2];  // Pipe for capturing stderr
 
 		// Create pipes
 		if (pipe(outputPipe) == -1 || pipe(errorPipe) == -1)
@@ -150,11 +154,11 @@ public:
 
 private:
 	static void handleChildProcess(
-		const std::string &scriptPath,
-		const std::map<std::string, std::string> &environment,
-		const std::string &requestBody,
-		int outputPipe[2],
-		int errorPipe[2])
+		const std::string							&scriptPath,
+		const std::map<std::string, std::string>	&environment,
+		const std::string							&requestBody,
+		int											outputPipe[2],
+		int											errorPipe[2])
 	{
 		// Redirect stdout to output pipe
 		close(outputPipe[0]); // Close read end

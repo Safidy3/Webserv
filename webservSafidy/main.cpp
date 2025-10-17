@@ -6,7 +6,7 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:48 by safandri          #+#    #+#             */
-/*   Updated: 2025/09/20 15:53:18 by safandri         ###   ########.fr       */
+/*   Updated: 2025/10/17 15:10:10 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,8 @@ MimeTypes loadMimeTypes(const std::string& path)
 	return mimeTypes;
 }
 
+/*
+*/
 int main(int argc, char **argv)
 {
 	std::string configPath;
@@ -80,3 +82,31 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
+
+
+// int main()
+// {
+//     std::string rawRequest = 
+// 		// "POST /cgi_bin/form_handler.py HTTP/1.1\r\n"
+//         "POST /test/demo_form.php?getname1=value1&getname2=value2 HTTP/1.1\r\n"
+//         "Host: localhost:8080\r\n"
+//         "Connection: keep-alive\r\n"
+//         "Content-Length: 16\r\n"
+//         "sec-ch-ua-platform: \"Linux\"\r\n"
+//         "Origin: http://localhost:8080\r\n"
+//         "Content-Type: application/x-www-form-urlencoded\r\n"
+//         "Referer: http://localhost:8080/html/cgi_test.html\r\n"
+//         "\r\n"
+//         "postname1=value1&postname2=value2";
+	
+		
+// 		HTTPRequestParser	parser;
+// 		HTTPRequest			request;
+
+// 		parser.parse(rawRequest);
+// 		request = parser.getRequest();
+		
+// 		request.printRequest();
+
+//     return 0;
+// }

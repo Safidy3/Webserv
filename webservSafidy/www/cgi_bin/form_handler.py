@@ -16,6 +16,13 @@ print("<h2>Python CGI Demo</h2>")
 method = os.environ.get("REQUEST_METHOD", "GET")
 
 if method == "GET":
+	print("<p>GET request :</p>")
+	queryString = os.environ.get("QUERY_STRING", "")
+	querys = parse_url_query(queryString)
+	print(f"<p>your name is <i>{querys['name']}</i> and you are <i>{querys['age']}</i></p>")
+
+elif method == "POST":
+	print("<p>POST request :</p>")
 	queryString = os.environ.get("QUERY_STRING", "")
 	querys = parse_url_query(queryString)
 	print(f"<p>your name is <i>{querys['name']}</i> and you are <i>{querys['age']}</i></p>")
@@ -23,13 +30,4 @@ if method == "GET":
 print("<p>by!</p>")
 print("<a href=\"../html/index.html\">main</a></br>")
 print("<a href=\"../root.html\">Root</a>")
-
-# elif method == "POST":
-#     # Read form data
-#     form = cgi.FieldStorage()
-#     name = form.getvalue("name", "Unknown")
-#     age = form.getvalue("age", "Unknown")
-#     print(f"<p>Request method: POST</p>")
-#     print(f"<p>Hello, {name}! You are {age} years old.</p>")
-
 print("</body></html>")

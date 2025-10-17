@@ -66,6 +66,7 @@ public:
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
 			return cgiHandler.executeCGI(relativePath);
+
 		return ResponseFactory::methodNotAllowed_405();
 	}
 };
