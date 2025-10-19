@@ -30,6 +30,7 @@
 #include <sys/wait.h>	// for waitpid()
 #include <unistd.h> 	// for close()
 #include <vector>		// for storing client
+#include <iterator>
 
 #include <sstream>		// for float to string
 #include <fstream>		// for static_file manipulation
@@ -98,6 +99,14 @@ struct CGIResult
 	CGIResult() : exitCode(-1), timedOut(false) {}
 };
 
+struct Data
+{
+	std::string	name;
+	std::string	age;
+	std::string	comment;
+};
+
+typedef std::map<int, Data*> DataMap;
 
 void set_nonblocking(int fd);
 // bool	parseHttpRequest(const char *rawRequest, HttpRequest &request);

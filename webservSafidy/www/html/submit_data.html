@@ -4,23 +4,15 @@
 	<title>CGI Form Demo</title>
 </head>
 <body>
-	<h1>CGI Form Example</h1>
-
-	<h3>GET Request</h3>
-	<form action="../cgi_bin/form_handler.py" method="get">
-		Name: <input type="text" name="name"><br>
-		Age: <input type="text" name="age"><br>
-		<input type="submit" value="Submit (GET)">
-	</form>
-
-	<hr>
-
 	<h3>POST Request</h3>
+	
 	<form action="../cgi_bin/form_handler.py" method="post">
 		Name: <input type="text" name="name"><br>
 		Age: <input type="text" name="age"><br>
+		Comment: <input type="text" name="comment"><br>
 		<input type="submit" value="Submit (POST)">
 	</form>
+	
 	<p><a href="./index.html">Main</a><br></p>
 	<p><a href="../root.html">Root</a></p>
 </body>

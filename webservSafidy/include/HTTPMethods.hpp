@@ -7,6 +7,7 @@
 #include "CGIHandler.hpp"
 #include "Server.hpp"
 #include "Client.hpp"
+#include "DataHandler.hpp"
 
 class HTTPMethodHandler
 {
@@ -27,8 +28,6 @@ public:
 			return GETHandler();
 		else if (request.method == "POST")
 			return POSTHandler();
-		else if (request.method == "DELETE")
-			return DELETEHandler();
 		else
 			return ResponseFactory::methodNotAllowed_405();
 	}
@@ -67,17 +66,18 @@ public:
 
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
-		{
-			// add req.query in a csv file
 			return cgiHandler.executeCGI(relativePath);
+		else
+		{
+			CSVData dataHandler("data.csv");
+			dataHandler.addData(
+				request.getHeader("name"),
+				request.getHeader("age"),
+				request.getHeader("comment")
+			);
+			return ResponseFactory::ok()
+				.html("<html><body><h1>Data Submitted Successfully</h1></body></html>");
 		}
-
-		return ResponseFactory::methodNotAllowed_405();
-	}
-
-	HTTPResponse DELETEHandler()
-	{
-		return ResponseFactory::methodNotAllowed_405();
 	}
 };
 

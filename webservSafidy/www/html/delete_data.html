@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>CGI Form Demo</title>
+	<script src="../static/requestHandler.js"></script>
+</head>
+<body>
+	<h3>DELETE Request</h3>
+
+    <!-- Form to simulate a DELETE request -->
+    <form id="deleteForm">
+        <label for="itemId">Enter ID to delete:</label>
+        <input type="text" id="itemId" name="itemId" required>
+        <button type="submit">Delete</button>
+    </form>
+
+    <script>
+        document.getElementById('deleteForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting the default way
+
+            const itemId = document.getElementById('itemId').value;
+            
+            // Check if the itemId is not empty
+            if (!itemId) {
+                alert("Please provide an ID.");
+                return;
+            }
+
+            // Send the DELETE request using fetch API
+            fetch(`https://your-api-url.com/items/${itemId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle success or error
+                if (data.success) {
+                    alert(`Item with ID ${itemId} has been deleted.`);
+                } else {
+                    alert(`Failed to delete item with ID ${itemId}.`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting item.');
+            });
+        });
+    </script>
+
+
+	
+	<p><a href="./index.html">Main</a><br></p>
+	<p><a href="../root.html">Root</a></p>
+</body>
+</html>
