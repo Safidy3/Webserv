@@ -139,6 +139,7 @@ public:
 
 		file.close();
 		body_ = content;
+		contentType("text/html; charset=utf-8");
 		return *this;
 	}
 
@@ -252,10 +253,9 @@ public:
 
 	void printResponse() const
 	{
-		std::cout << "=== HTTP Response ===\n";
-		std::cout << build() << "\n=====================\n";
+		std::cout << "\n----- HTTP Response -----\n\n";
+		std::cout << build() << "\n\n============================================================\n";
 	}
-	
 };
 
 // Factory class for common responses
