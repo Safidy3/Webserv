@@ -1,0 +1,32 @@
+nohup: ignoring input
+Listening on 127.0.0.1:8080
+Listening on 0.0.0.0:8081
+Listening on 192.168.1.10:8082
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1' relativePath='index.html' uri='/' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/index.html'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/index.html'
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1' relativePath='webserv.png' uri='/webserv.png' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/webserv.png'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/webserv.png'
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/servers' relativePath='sass/style.css' uri='/bootstrap/sass/style.css' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/servers/sass/style.css'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/servers/sass/style.css'
+responseBuilder: trying altPath='/home/rivoinfo/Documents/DEV/servweb/webserv/servers/bootstrap/sass/style.css'
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1' relativePath='script.js' uri='/script.js' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/script.js'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/script.js'
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1' relativePath='index.html' uri='/' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/index.html'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/index.html'
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1' relativePath='webserv.png' uri='/webserv.png' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/webserv.png'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/webserv.png'
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/servers' relativePath='sass/style.css' uri='/bootstrap/sass/style.css' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/servers/sass/style.css'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/servers/sass/style.css'
+responseBuilder: trying altPath='/home/rivoinfo/Documents/DEV/servweb/webserv/servers/bootstrap/sass/style.css'
+New client 6 attached to server listening on port 8080
+[DEBUG] root='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1' relativePath='script.js' uri='/script.js' filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/script.js'
+responseBuilder: candidate filePath='/home/rivoinfo/Documents/DEV/servweb/webserv/clients/www1/script.js'
+New client 6 attached to server listening on port 8080
+New client 6 attached to server listening on port 8080

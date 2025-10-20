@@ -1,7 +1,7 @@
 
 #include "../include/utils.hpp"
 
-std::vector<std::string> BitcoinExchange::ftSplitToFloat(const std::string& str, char delimiter)
+std::vector<std::string> ftSplitToFloat(const std::string& str, char delimiter)
 {
     std::deque<float> output;
     std::istringstream iss(str);

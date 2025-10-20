@@ -11,6 +11,8 @@
 /* ************************************************************************** */
 
 #include "../include/handleErrors.hpp"
+#include <sys/socket.h>
+#include <unistd.h>
 
 std::map<int, std::string> HandleErrors::initReasonMap() {
     std::map<int, std::string> reasons;
@@ -95,5 +97,26 @@ std::string HandleErrors::generateErrorResponse(
     oss << body;
 
     return oss.str();
+}
+
+void HandleErrors::sendError(int client_fd, int code, const ServerConfig &serverConf, 
+    const LocationConfig *locationConf, const std::string &extraHeaders)
+{
+    std::string resp = generateErrorResponse(code, serverConf, locationConf, extraHeaders);
+    sendResponse(client_fd, resp);
+}
+
+void HandleErrors::sendResponse(int client_fd, const std::string &response)
+{
+    if (client_fd < 0)
+        return;
+    // Attempt a single non-blocking send. Per project rules, do not
+    // branch based on errno after send; the server is responsible for
+    // using poll() and handling retries via its own mechanism.
+    ssize_t n = ::send(client_fd, response.c_str(), response.size(), 0);
+    if (n <= 0) {
+        ::close(client_fd);
+        return;
+    }
 }
 

@@ -3,16 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:40:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/09/15 19:30:37 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/10/07 13:45:25 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/httpConfig.hpp"
 #include "../include/httpRequest.hpp"
 #include "../include/httpServer.hpp"
+
+#include <signal.h>
 
 int main(int argc, char **argv)
 {
@@ -30,6 +32,8 @@ int main(int argc, char **argv)
     
     try
     {
+        // Eviter que des EPIPE lors de send() fassent terminer le processus
+        signal(SIGPIPE, SIG_IGN);
         ConfigParser parser(configPath, mimeTypesPath);
 
         HttpConfig config = parser.parse();

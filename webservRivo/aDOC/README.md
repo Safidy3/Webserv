@@ -151,3 +151,152 @@ Veux-tu que je mette cette traduction en format tableau bilingue (anglais | fran
 
 No file chosenNo file chosen
 ChatGPT can make mistakes. Check important info.
+
+
+🔴 1. Gestion correcte des chemins root / location
+
+Tu as du 404 car les chemins sont mal combinés (root + URI).
+✅ À corriger avec soit alias, soit correction du root.
+
+👉 Ce n'est pas encore conforme au sujet.
+
+🔴 2. Gestion complète des 3 méthodes HTTP
+
+Tu dois absolument :
+
+✅ GET → OK
+⚠️ POST → Pas encore géré correctement
+
+Pour POST, tu dois :
+
+Lire le body via Content-Length ou chunked.
+
+Autoriser l’upload dans certaines locations.
+
+Stocker dans un dossier défini (ex: /uploads)
+
+❌ DELETE → à faire !
+
+Supprimer un fichier si présent
+
+Retourner 200 / 204 / 404 selon le cas
+
+🔴 3. Upload de fichiers
+
+⚠️ Pas encore implémenté :
+
+“Clients must be able to upload files.”
+
+Faut :
+
+Lire le body
+
+Respecter client_max_body_size
+
+Enregistrer dans upload_path
+
+🔴 4. Gestion correcte des codes d’erreur :
+
+Tu utilises :
+
+error_page 404 /errors/404.html;
+error_page 500 /errors/500.html;
+
+
+Il faut :
+
+Servir ces fichiers correctement
+
+Retourner le bon header (404 Not Found)
+
+🔴 5. Autoindex
+
+Tu as :
+
+autoindex off;
+
+
+Mais il faut :
+
+Supporter autoindex on;
+
+Générer un listing si activé
+
+🔴 6. Timeout / Connexions fermées proprement
+
+Le sujet impose :
+
+“A request to your server should never hang indefinitely.”
+
+⚠️ Pas encore de timeout sur clients.
+⚠️ Pas de gestion de POLLHUP ou POLLERR.
+
+🔴 7. Pas de lecture/écriture directe sans poll()
+
+Dans handleClientData tu fais :
+
+recv(...)
+send(...)
+
+
+Mais tu ne vérifies pas POLLOUT, donc ⚠️ non conforme.
+
+🔴 8. CGI incomplet
+
+Tu as :
+
+cgi_extension .php;
+cgi_path /usr/bin/php-cgi;
+
+
+Mais côté serveur :
+
+Lancement du CGI (fork + execve) → non fait
+
+Env vars (REQUEST_METHOD, CONTENT_LENGTH…) → NON
+
+Gestion body → NON
+
+Retour CGI au client → NON
+
+🔴 9. Redirections HTTP
+
+Le sujet impose :
+
+http redirection
+
+
+Pas encore supporté (return 301/302)
+
+🔴 10. Directory par défaut si URI = dossier
+
+Tu dois :
+
+Chercher index.html OU
+
+Générer l’autoindex si activé
+
+✅ Résumé final : ce qu’il te reste à faire
+🎯 CORE À FAIRE
+
+✅ Corriger root/location pour éviter les 404
+
+✅ Finir GET (avec autoindex + index fallback)
+
+🔴 Implémenter POST (body / upload / Content-Length / chunked)
+
+🔴 Implémenter DELETE
+
+🔴 Implémenter CGI correctement (fork/exec/environ)
+
+🔴 Gérer POLLOUT comme POLLIN dans poll
+
+🔴 Timeout + déconnexion clients propres
+
+🔴 Error pages dynamiques
+
+🔴 HTTP redirection
+
+🔴 Respect strict de client_max_body_size
+
+Quand tu veux, je t’établis un plan d’implémentation par bloc avec ordre de priorité. Tu veux ça ?

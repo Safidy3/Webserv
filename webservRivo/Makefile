@@ -64,14 +64,5 @@ fclean: clean
 
 re: fclean all
 
-run: all
-	@./$(NAME)
-
-runre: re
-	@./$(NAME)
-
-debug: all
-	@valgrind --track-origins=yes ./$(NAME)
-
 .PHONY: all clean fclean re
 
