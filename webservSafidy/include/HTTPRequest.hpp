@@ -28,8 +28,7 @@ public:
 
 	std::string getQueryParam(const std::string& name) const
 	{
-		std::map<std::string, std::string>::const_iterator it = 
-			queryParams.find(name);
+		std::map<std::string, std::string>::const_iterator it = queryParams.find(name);
 		if (it != queryParams.end())
 			return it->second;
 		return "";
@@ -45,8 +44,7 @@ public:
 		std::cout << "\t" << "uriPath : " << uriPath << "\n";
 		std::cout << "\t" << "version : " << version << "\n";
 
-		if (!queryParams.empty())
-			std::cout << "Query Parameters:\n";
+		std::cout << "Query Parameters:\n";
 		for (std::map<std::string, std::string>::const_iterator it = queryParams.begin();
 			 it != queryParams.end(); ++it)
 			std::cout << "\t" << it->first << ": " << it->second << "\n";
@@ -57,11 +55,10 @@ public:
 			for (std::map<std::string, std::string>::const_iterator it = headers.begin();
 				 it != headers.end(); ++it)
 				std::cout << "\t" << it->first << ": " << it->second << "\n";
-	
-			std::cout << "Body:\n";
-			if (!body.empty())
-				std::cout  << "\t" << "\n" << body << "\n";
 		}
+		std::cout << "Body:\n";
+		if (!body.empty())
+			std::cout  << "\t" << "\n" << body << "\n";
 
 		// std::cout << "\n------------------------\n\n";
 	}
@@ -138,8 +135,7 @@ public:
 				{
 					size_t bytesNeeded = request.contentLength - bodyBytesRead;
 					size_t bytesAvailable = buffer.length();
-					size_t bytesToRead = (bytesAvailable < bytesNeeded) ? 
-										bytesAvailable : bytesNeeded;
+					size_t bytesToRead = (bytesAvailable < bytesNeeded) ? bytesAvailable : bytesNeeded;
 					if (bytesToRead > 0)
 					{
 						request.body += buffer.substr(0, bytesToRead);
@@ -148,7 +144,10 @@ public:
 					}
 				}
 				if (bodyBytesRead >= request.contentLength)
+				{
+					parseQuery(request.body);
 					state = STATE_COMPLETE;
+				}
 				else
 					break;
 			}
@@ -218,23 +217,12 @@ private:
 		request.method = method;
 		request.uri = uri;
 		request.version = version;
-		parseQueryParams(uri);
+		parseQueryURI(uri);
 		return true;
 	}
 
-	void parseQueryParams(const std::string& uri)
+	void parseQuery(const std::string& queryString)
 	{
-		size_t queryStart = uri.find('?');
-		
-		if (queryStart == std::string::npos)
-		{
-			request.uriPath = uri;
-			return;
-		}
-		
-		request.uriPath = uri.substr(0, queryStart);
-		std::string queryString = uri.substr(queryStart + 1);
-		
 		size_t pos = 0;
 		while (pos < queryString.length())
 		{
@@ -256,12 +244,24 @@ private:
 				request.queryParams[key] = value;
 			}
 			else if (!param.empty())
-			{
 				request.queryParams[urlDecode(param)] = "";
-			}
 			
 			pos = ampPos + 1;
 		}
+	}
+
+	void parseQueryURI(const std::string& uri)
+	{
+		size_t queryStart = uri.find('?');
+		
+		if (queryStart == std::string::npos)
+		{
+			request.uriPath = uri;
+			return;
+		}
+		request.uriPath = uri.substr(0, queryStart);
+		std::string queryString = uri.substr(queryStart + 1);
+		parseQuery(queryString);
 	}
 
 	static std::string urlDecode(const std::string& encoded)

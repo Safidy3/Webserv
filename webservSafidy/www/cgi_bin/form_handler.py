@@ -25,7 +25,7 @@ def main():
 		print("<p>by!</p>")
 		print("<a href=\"../html/index.html\">main</a></br>")
 		print("<a href=\"../root.html\">Root</a>")
-	
+
 	print("</body></html>")
 
 if __name__ == "__main__":

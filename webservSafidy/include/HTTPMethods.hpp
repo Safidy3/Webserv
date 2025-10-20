@@ -55,7 +55,8 @@ public:
 
 	HTTPResponse POSTHandler()
 	{
-		std::string relativePath;
+		std::string		relativePath;
+		HTTPResponse	response;
 
 		if (!server.isValidUri(request.uriPath))
 			return ResponseFactory::notFound_404();
@@ -66,18 +67,30 @@ public:
 
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
-			return cgiHandler.executeCGI(relativePath);
+		{
+			response = cgiHandler.executeCGI(relativePath);
+			if (response.getStatusCode() == 200)
+			{
+				CSVData dataHandler("data.csv");
+				dataHandler.addData(
+					request.getQueryParam("name"),
+					request.getQueryParam("age"),
+					request.getQueryParam("comment")
+				);
+			}
+		}
 		else
 		{
 			CSVData dataHandler("data.csv");
 			dataHandler.addData(
-				request.getHeader("name"),
-				request.getHeader("age"),
-				request.getHeader("comment")
+				request.getQueryParam("name"),
+				request.getQueryParam("age"),
+				request.getQueryParam("comment")
 			);
-			return ResponseFactory::ok()
-				.html("<html><body><h1>Data Submitted Successfully</h1></body></html>");
+			response = ResponseFactory::ok()
+				.html("<html><body><h1>Data Submitted Successfully !!</h1></body></html>");
 		}
+		return response;
 	}
 };
 
