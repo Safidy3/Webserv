@@ -1,57 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>CGI Form Demo</title>
-	<script src="../static/requestHandler.js"></script>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Delete Request</title>
 </head>
 <body>
-	<h3>DELETE Request</h3>
+	<input type="text" id="recordId" placeholder="Enter ID to delete">
+	<button onclick="deleteRecord()">Delete Record</button>
 
-    <!-- Form to simulate a DELETE request -->
-    <form id="deleteForm">
-        <label for="itemId">Enter ID to delete:</label>
-        <input type="text" id="itemId" name="itemId" required>
-        <button type="submit">Delete</button>
-    </form>
+	<script>
+		function deleteRecord() {
+			const id = document.getElementById('recordId').value;
 
-    <script>
-        document.getElementById('deleteForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the form from submitting the default way
+			// Ensure ID is not empty
+			if (!id)
+			{
+				alert('Please enter an ID');
+				return;
+			}
 
-            const itemId = document.getElementById('itemId').value;
-            
-            // Check if the itemId is not empty
-            if (!itemId) {
-                alert("Please provide an ID.");
-                return;
-            }
-
-            // Send the DELETE request using fetch API
-            fetch(`https://your-api-url.com/items/${itemId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Handle success or error
-                if (data.success) {
-                    alert(`Item with ID ${itemId} has been deleted.`);
-                } else {
-                    alert(`Failed to delete item with ID ${itemId}.`);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error deleting item.');
-            });
-        });
-    </script>
-
-
-	
-	<p><a href="./index.html">Main</a><br></p>
-	<p><a href="../root.html">Root</a></p>
+			fetch(`../cgi_bin/delete_user.py?id=${encodeURIComponent(id)}`, {method: 'DELETE'})
+			.then(response =>{
+				if (!response.ok) {throw new Error("Failed to delete record");}
+				return response.text(); // or response.json() if your server returns JSON
+			})
+			.then(data => {
+				alert("Record deleted successfully!");
+				console.log(data);
+			})
+			.catch(error => {
+				console.error("Error deleting record:", error);
+				alert("Error deleting record");
+			});
+		}
+	</script>
 </body>
 </html>

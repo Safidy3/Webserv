@@ -17,11 +17,14 @@ def main():
 		print("<h3>Users :</h3>")
 		with open(csv_file_path, mode='r') as csvfile:
 			csvreader = csv.reader(csvfile)
+			id =  0
 			for row in csvreader:
+				print(f"<p>id: {id}</p>")
 				print(f"<p>name: {row[0]}</p>")
 				print(f"<p>age: {row[1]}</p>")
 				print(f"<p>comment: {row[2]}</p>")
 				print("<hr>")
+				id += 1
 
 	print("<a href=\"../html/index.html\">main</a></br>")
 	print("<a href=\"../root.html\">Root</a>")

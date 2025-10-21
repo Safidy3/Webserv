@@ -149,8 +149,15 @@ public:
 		return d;
 	}
 
-	bool removeData(int id)
+	bool removeData(const std::string& idString)
 	{
+		int id = ftToInt(idString);
+		if (id < 0)
+		{
+			std::cerr << "Invalid ID !" << std::endl;
+			return false;
+		}
+
 		std::ifstream fileIn(filename.c_str());
 		if (!fileIn.is_open())
 		{

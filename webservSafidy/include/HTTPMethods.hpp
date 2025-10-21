@@ -22,26 +22,29 @@ public:
 
 	~HTTPMethodHandler() {}
 
-	HTTPResponse generateResponse()
+	HTTPResponse	generateResponse()
 	{
+		std::string relativePath;
+		
+		if (!server.isValidUri(request.uriPath))
+			return ResponseFactory::notFound_404();
+		
+		relativePath = server.getLocationValidIndex(request.uriPath);
+		if (!server.isValidMethod(request.uriPath, request.method))
+			return ResponseFactory::methodNotAllowed_405();
+		
 		if (request.method == "GET")
-			return GETHandler();
+		return GETHandler(relativePath);
 		else if (request.method == "POST")
-			return POSTHandler();
+		return POSTHandler(relativePath);
+		else if (request.method == "DELETE")
+			return DELETEHandler(relativePath);
 		else
 			return ResponseFactory::methodNotAllowed_405();
 	}
 
-	HTTPResponse GETHandler()
+	HTTPResponse	GETHandler(const std::string& relativePath)
 	{
-		std::string relativePath;
-
-		if (!server.isValidUri(request.uriPath))
-			return ResponseFactory::notFound_404();
-
-		relativePath = server.getLocationValidIndex(request.uriPath);
-		if (!server.isValidMethod(request.uriPath, request.method))
-			return ResponseFactory::methodNotAllowed_405();
 
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
@@ -53,17 +56,9 @@ public:
 			return ResponseFactory::forbidden_403();
 	}
 
-	HTTPResponse POSTHandler()
+	HTTPResponse	POSTHandler(const std::string& relativePath)
 	{
-		std::string		relativePath;
 		HTTPResponse	response;
-
-		if (!server.isValidUri(request.uriPath))
-			return ResponseFactory::notFound_404();
-
-		relativePath = server.getLocationValidIndex(request.uriPath);
-		if (!server.isValidMethod(request.uriPath, request.method))
-			return ResponseFactory::methodNotAllowed_405();
 
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
@@ -87,12 +82,34 @@ public:
 				request.getQueryParam("age"),
 				request.getQueryParam("comment")
 			);
-			response = ResponseFactory::ok()
-				.html("<html><body><h1>Data Submitted Successfully !!</h1></body></html>");
+			response = ResponseFactory::ok().html("<html><body><h1>Data Submitted Successfully !!</h1></body></html>");
+		}
+		return response;
+	}
+
+	HTTPResponse	DELETEHandler(const std::string& relativePath)
+	{
+		HTTPResponse	response;
+
+		// Check if CGI request
+		if (cgiHandler.isCGIRequest())
+		{
+			response = cgiHandler.executeCGI(relativePath);
+			std::cout << "RESPONSE STATUS : " << response.getStatusCode() << std::endl;
+			if (response.getStatusCode() == 200)
+			{
+				CSVData dataHandler("data.csv");
+				dataHandler.removeData(request.getQueryParam("id"));
+			}
+		}
+		else
+		{
+			CSVData dataHandler("data.csv");
+			dataHandler.removeData(request.getQueryParam("id"));
+			response = ResponseFactory::ok().html("<html><body><h1>Data Submitted Successfully !!</h1></body></html>");
 		}
 		return response;
 	}
 };
-
 
 #endif

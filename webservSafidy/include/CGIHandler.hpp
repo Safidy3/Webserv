@@ -305,8 +305,8 @@ public:
 		if (!isCGIScriptValid(scriptPath))
 			return ResponseFactory::forbidden_403();
 
-		// Only allow GET and POST methods
-		if (request.method != "GET" && request.method != "POST")
+		// Only allow GET and POST and DELETE methods
+		if (request.method != "GET" && request.method != "POST" && request.method != "DELETE")
 			return ResponseFactory::methodNotAllowed_405();
 
 		// Build CGI environment
