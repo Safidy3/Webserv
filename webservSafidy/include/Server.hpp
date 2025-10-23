@@ -79,6 +79,8 @@ public:
 	const std::string					getRoot() const { return _config.root; }
 	const LocationConfig_t*				getLocationsConfig(const std::string& path) const;
 	const std::vector<std::string>*		getLocationMethods(const std::string& path) const;
+	bool								getLocationAutoindex(const std::string& path) const;
+	
 	const std::string					getLocationRoot(const std::string& path) const;
 	const std::string*					getErrorPage(int code) const;
 	const std::vector<std::string>*		getIndexFiles() const { return &_config.index; };

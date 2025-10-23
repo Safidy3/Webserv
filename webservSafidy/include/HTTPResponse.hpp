@@ -45,9 +45,9 @@ private:
 public:
 	HTTPResponse()
 		: statusCode_(200),
-		  reasonPhrase_("OK"),
-		  httpVersion_("HTTP/1.1"),
-		  body_("") {}
+		reasonPhrase_("OK"),
+		httpVersion_("HTTP/1.1"),
+		body_("") {}
 
 	// Builder methods with method chaining
 	HTTPResponse &status(int code)
@@ -79,7 +79,7 @@ public:
 	HTTPResponse &headers(const std::map<std::string, std::string> &headers)
 	{
 		for (std::map<std::string, std::string>::const_iterator it = headers.begin();
-			 it != headers.end(); ++it)
+			it != headers.end(); ++it)
 			headers_[it->first] = it->second;
 		return *this;
 	}
@@ -206,11 +206,11 @@ public:
 
 		// Status line
 		response << httpVersion_ << " " << statusCode_ << " "
-				 << reasonPhrase_ << "\r\n";
+				<< reasonPhrase_ << "\r\n";
 
 		// Headers
 		for (std::map<std::string, std::string>::const_iterator it = headers_.begin();
-			 it != headers_.end(); ++it)
+			it != headers_.end(); ++it)
 			response << it->first << ": " << it->second << "\r\n";
 
 		// Empty line separating headers from body
@@ -238,6 +238,231 @@ public:
 		std::cout << build(includeBody) << "\n\n============================================================\n";
 	}
 };
+
+// Directory listing builder class
+class DirectoryListing
+{
+private:
+	std::string path_;
+	std::string title_;
+	std::vector<DirectoryEntry> entries_;
+	bool showParent_;
+
+	std::string formatSize(long bytes) const {
+		if (bytes < 1024) {
+			std::ostringstream oss;
+			oss << bytes << " B";
+			return oss.str();
+		} else if (bytes < 1024 * 1024) {
+			std::ostringstream oss;
+			oss << (bytes / 1024) << " KB";
+			return oss.str();
+		} else if (bytes < 1024 * 1024 * 1024) {
+			std::ostringstream oss;
+			oss << (bytes / (1024 * 1024)) << " MB";
+			return oss.str();
+		} else {
+			std::ostringstream oss;
+			oss << (bytes / (1024 * 1024 * 1024)) << " GB";
+			return oss.str();
+		}
+	}
+
+	std::string formatTime(time_t timestamp) const {
+		char buf[80];
+		struct tm* timeinfo = localtime(&timestamp);
+		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
+		return std::string(buf);
+	}
+
+	std::string escapeHtml(const std::string& text) const {
+		std::string result;
+		for (size_t i = 0; i < text.length(); ++i) {
+			switch (text[i]) {
+				case '&': result += "&amp;"; break;
+				case '<': result += "&lt;"; break;
+				case '>': result += "&gt;"; break;
+				case '"': result += "&quot;"; break;
+				case '\'': result += "&#39;"; break;
+				default: result += text[i];
+			}
+		}
+		return result;
+	}
+
+	bool scanDirectory(const std::string& dirPath)
+	{
+		entries_.clear();
+
+		DIR* dir = opendir(dirPath.c_str());
+		if (!dir)
+			return false;
+
+		struct dirent* entry;
+		while ((entry = readdir(dir)) != NULL)
+		{
+			std::string name = entry->d_name;
+			if (name != "." && name != "..")
+			{
+				std::string fullPath = dirPath + "/" + name;
+				struct stat statbuf;
+				
+				if (stat(fullPath.c_str(), &statbuf) == 0)
+				{
+					bool isDir = S_ISDIR(statbuf.st_mode);
+					long size = isDir ? 0 : statbuf.st_size;
+					std::string modTime = formatTime(statbuf.st_mtime);
+					entries_.push_back(DirectoryEntry(name, isDir, size, modTime));
+				}
+			}
+		}
+		closedir(dir);
+		std::sort(entries_.begin(), entries_.end(), entrySorter);
+		return true;
+	}
+
+	static bool entrySorter(const DirectoryEntry& a, const DirectoryEntry& b)
+	{
+		if (a.isDirectory != b.isDirectory)
+			return a.isDirectory; // Directories first
+		return a.name < b.name; // Alphabetical
+	}
+
+public:
+	DirectoryListing(const std::string& path)
+		: path_(path), title_("Index of " + path), showParent_(true){}
+
+	DirectoryListing& title(const std::string& t)
+	{
+		title_ = t;
+		return *this;
+	}
+
+	DirectoryListing& showParentDirectory(bool show)
+	{
+		showParent_ = show;
+		return *this;
+	}
+
+	std::string buildHtml()
+	{
+		if (!scanDirectory(path_))
+			return "<html><body><h1>Error: Cannot read directory</h1></body></html>";
+			
+		std::ostringstream html;
+		html << "<!DOCTYPE html>\n"
+			<< "<html>\n"
+			<< "<head>\n"
+			<< "    <meta charset=\"utf-8\">\n"
+			<< "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+			<< "    <title>" << escapeHtml(title_) << "</title>\n"
+			<< "    <style>\n"
+			<< "        body {\n"
+			<< "            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;\n"
+			<< "            max-width: 1200px;\n"
+			<< "            margin: 0 auto;\n"
+			<< "            padding: 20px;\n"
+			<< "            background: #f5f5f5;\n"
+			<< "        }\n"
+			<< "        h1 {\n"
+			<< "            color: #333;\n"
+			<< "            border-bottom: 2px solid #0066cc;\n"
+			<< "            padding-bottom: 10px;\n"
+			<< "        }\n"
+			<< "        table {\n"
+			<< "            width: 100%;\n"
+			<< "            background: white;\n"
+			<< "            border-collapse: collapse;\n"
+			<< "            box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n"
+			<< "        }\n"
+			<< "        th {\n"
+			<< "            background: #0066cc;\n"
+			<< "            color: white;\n"
+			<< "            padding: 12px;\n"
+			<< "            text-align: left;\n"
+			<< "            font-weight: 600;\n"
+			<< "        }\n"
+			<< "        td {\n"
+			<< "            padding: 10px 12px;\n"
+			<< "            border-bottom: 1px solid #eee;\n"
+			<< "        }\n"
+			<< "        tr:hover {\n"
+			<< "            background: #f9f9f9;\n"
+			<< "        }\n"
+			<< "        a {\n"
+			<< "            color: #0066cc;\n"
+			<< "            text-decoration: none;\n"
+			<< "        }\n"
+			<< "        a:hover {\n"
+			<< "            text-decoration: underline;\n"
+			<< "        }\n"
+			<< "        .icon {\n"
+			<< "            display: inline-block;\n"
+			<< "            width: 20px;\n"
+			<< "            text-align: center;\n"
+			<< "            margin-right: 8px;\n"
+			<< "        }\n"
+			<< "        .dir { color: #f39c12; }\n"
+			<< "        .file { color: #3498db; }\n"
+			<< "        .size { text-align: right; }\n"
+			<< "        .date { color: #777; }\n"
+			<< "    </style>\n"
+			<< "</head>\n"
+			<< "<body>\n"
+			<< "    <h1>" << escapeHtml(title_) << "</h1>\n"
+			<< "    <table>\n"
+			<< "        <thead>\n"
+			<< "            <tr>\n"
+			<< "                <th>Name</th>\n"
+			<< "                <th class=\"size\">Size</th>\n"
+			<< "                <th>Modified</th>\n"
+			<< "            </tr>\n"
+			<< "        </thead>\n"
+			<< "        <tbody>\n";
+
+		// Parent directory link
+		if (showParent_) {
+			html << "            <tr>\n"
+				<< "                <td><span class=\"icon dir\">📁</span><a href=\"../\">Parent Directory</a></td>\n"
+				<< "                <td class=\"size\">-</td>\n"
+				<< "                <td class=\"date\">-</td>\n"
+				<< "            </tr>\n";
+		}
+
+		// Directory entries
+		for (size_t i = 0; i < entries_.size(); ++i)
+		{
+			const DirectoryEntry&	entry = entries_[i];
+			std::string				icon = entry.isDirectory ? "📁" : "📄";
+			std::string				iconClass = entry.isDirectory ? "dir" : "file";
+			std::string				href = escapeHtml(entry.name);
+			if (entry.isDirectory) href += "/";
+			html << "            <tr>\n"
+				<< "                <td><span class=\"icon " << iconClass << "\">" << icon << "</span>"
+				<< "<a href=\"" << href << "\">" << escapeHtml(entry.name) << "</a></td>\n"
+				<< "                <td class=\"size\">" 
+				<< (entry.isDirectory ? "-" : formatSize(entry.size)) << "</td>\n"
+				<< "                <td class=\"date\">" << escapeHtml(entry.modifiedTime) << "</td>\n"
+				<< "            </tr>\n";
+		}
+
+		html << "        </tbody>\n"
+			<< "    </table>\n"
+			<< "</body>\n"
+			<< "</html>";
+
+		return html.str();
+	}
+
+	HTTPResponse buildResponse()
+	{
+		return HTTPResponse()
+			.status(200)
+			.html(buildHtml())
+			.autoHeaders();
+	}
+};
+
 
 // Factory class for common responses
 class ResponseFactory
@@ -349,87 +574,264 @@ public:
 			.header("Location", location)
 			.autoHeaders();
 	}
+
+	static HTTPResponse listDirectory(const std::string& location)
+	{
+		DirectoryListing listing(location);
+		return listing.buildResponse();
+	}
 };
 
 #endif
+
+
+
+
+// Example usage with complete output demonstration:
+/*
+#include <iostream>
+
+int main() {
+	std::cout << "=== Example 1: Simple JSON Response ===\n";
+	HttpResponse response1 = HttpResponse()
+		.status(200)
+		.json("{\"message\": \"Hello World\", \"status\": \"success\"}")
+		.autoHeaders();
+	std::cout << response1.build() << std::endl;
+
+	std::cout << "\n=== Example 2: 404 Not Found (Factory) ===\n";
+	HttpResponse response2 = ResponseFactory::notFound();
+	std::cout << response2.build() << std::endl;
+
+	std::cout << "\n=== Example 3: Complex HTML Response ===\n";
+	std::string htmlContent = 
+		"<!DOCTYPE html>\n"
+		"<html>\n"
+		"<head><title>Welcome</title></head>\n"
+		"<body>\n"
+		"  <h1>Welcome to Our Site</h1>\n"
+		"  <p>This is a complete HTTP response example.</p>\n"
+		"</body>\n"
+		"</html>";
+	
+	HttpResponse response3 = HttpResponse()
+		.status(200)
+		.header("X-Custom-Header", "CustomValue")
+		.header("Cache-Control", "max-age=3600")
+		.header("Connection", "keep-alive")
+		.html(htmlContent)
+		.autoHeaders();
+	std::cout << response3.build() << std::endl;
+
+	std::cout << "\n=== Example 4: 302 Redirect ===\n";
+	HttpResponse response4 = ResponseFactory::redirect("https://example.com/new-location");
+	std::cout << response4.build() << std::endl;
+
+	std::cout << "\n=== Example 5: 201 Created with JSON ===\n";
+	HttpResponse response5 = HttpResponse()
+		.status(201)
+		.header("X-Request-ID", "abc123xyz")
+		.header("Location", "/api/users/42")
+		.json("{\"id\": 42, \"username\": \"john_doe\", \"created\": true}")
+		.autoHeaders();
+	std::cout << response5.build() << std::endl;
+
+	std::cout << "\n=== Example 6: Plain Text Response ===\n";
+	HttpResponse response6 = HttpResponse()
+		.status(200)
+		.text("This is a plain text response.\nIt can contain multiple lines.\nHere's line 3.")
+		.autoHeaders();
+	std::cout << response6.build() << std::endl;
+
+	std::cout << "\n=== Example 7: Serve HTML File ===\n";
+	// Assuming you have a file named "index.html"
+	HttpResponse response7 = HttpResponse()
+		.status(200)
+		.file("index.html")  // Auto-detects Content-Type as text/html
+		.autoHeaders();
+	std::cout << response7.build() << std::endl;
+
+	std::cout << "\n=== Example 8: Serve Image File ===\n";
+	HttpResponse response8 = ResponseFactory::serveFile("logo.png");
+	std::cout << response8.build() << std::endl;
+
+	std::cout << "\n=== Example 9: Manual File Load with Custom Headers ===\n";
+	HttpResponse response9 = HttpResponse()
+		.status(200)
+		.header("Cache-Control", "public, max-age=86400")
+		.bodyFromFile("data.json")
+		.contentType("application/json")
+		.autoHeaders();
+	std::cout << response9.build() << std::endl;
+
+	std::cout << "\n=== Example 10: Directory Listing ===\n";
+	DirectoryListing listing("/var/www/html");
+	listing.title("Files in /var/www/html")
+		.showParentDirectory(true);
+	HttpResponse response10 = listing.buildResponse();
+	std::cout << response10.build() << std::endl;
+
+	std::cout << "\n=== Example 11: Simple Directory Listing ===\n";
+	DirectoryListing listing2(".");
+	std::cout << listing2.buildHtml() << std::endl;
+
+	return 0;
+}
+*/
+
+/* EXPECTED OUTPUT:
+
+=== Example 1: Simple JSON Response ===
+HTTP/1.1 200 OK
+Content-Length: 47
+Content-Type: application/json
+Date: Sun, 05 Oct 2025 10:30:45 GMT
+Server: CustomServer/1.0
+
+{"message": "Hello World", "status": "success"}
+
+=== Example 2: 404 Not Found (Factory) ===
+HTTP/1.1 404 Not Found
+Content-Length: 53
+Content-Type: text/html; charset=utf-8
+Date: Sun, 05 Oct 2025 10:30:45 GMT
+Server: CustomServer/1.0
+
+<html><body><h1>404 Not Found</h1></body></html>
+
+=== Example 3: Complex HTML Response ===
+HTTP/1.1 200 OK
+Cache-Control: max-age=3600
+Connection: keep-alive
+Content-Length: 187
+Content-Type: text/html; charset=utf-8
+Date: Sun, 05 Oct 2025 10:30:45 GMT
+Server: CustomServer/1.0
+X-Custom-Header: CustomValue
+
+<!DOCTYPE html>
+<html>
+<head><title>Welcome</title></head>
+<body>
+<h1>Welcome to Our Site</h1>
+<p>This is a complete HTTP response example.</p>
+</body>
+</html>
+
+=== Example 4: 302 Redirect ===
+HTTP/1.1 302 Found
+Date: Sun, 05 Oct 2025 10:30:45 GMT
+Location: https://example.com/new-location
+Server: CustomServer/1.0
+
+
+=== Example 5: 201 Created with JSON ===
+HTTP/1.1 201 Created
+Content-Length: 56
+Content-Type: application/json
+Date: Sun, 05 Oct 2025 10:30:45 GMT
+Location: /api/users/42
+Server: CustomServer/1.0
+X-Request-ID: abc123xyz
+
+{"id": 42, "username": "john_doe", "created": true}
+
+=== Example 6: Plain Text Response ===
+HTTP/1.1 200 OK
+Content-Length: 81
+Content-Type: text/plain; charset=utf-8
+Date: Sun, 05 Oct 2025 10:30:45 GMT
+Server: CustomServer/1.0
+
+This is a plain text response.
+It can contain multiple lines.
+Here's line 3.
+
+*/
+
+
+
+
+
+
 
 /*
 // Example usage:
 #include <iostream>
 
 int main() {
-    std::cout << "=== Example 1: Simple JSON Response ===\n";
-    HttpResponse response1 = HttpResponse()
-        .status(200)
-        .json("{\"message\": \"Hello World\", \"status\": \"success\"}")
-        .autoHeaders();
-    std::cout << response1.build() << std::endl;
+	std::cout << "=== Example 1: Simple JSON Response ===\n";
+	HttpResponse response1 = HttpResponse()
+		.status(200)
+		.json("{\"message\": \"Hello World\", \"status\": \"success\"}")
+		.autoHeaders();
+	std::cout << response1.build() << std::endl;
 
-    std::cout << "\n=== Example 2: 404 Not Found (Factory) ===\n";
-    HttpResponse response2 = ResponseFactory::notFound();
-    std::cout << response2.build() << std::endl;
+	std::cout << "\n=== Example 2: 404 Not Found (Factory) ===\n";
+	HttpResponse response2 = ResponseFactory::notFound();
+	std::cout << response2.build() << std::endl;
 
-    std::cout << "\n=== Example 3: Complex HTML Response ===\n";
-    std::string htmlContent = 
-        "<!DOCTYPE html>\n"
-        "<html>\n"
-        "<head><title>Welcome</title></head>\n"
-        "<body>\n"
-        "  <h1>Welcome to Our Site</h1>\n"
-        "  <p>This is a complete HTTP response example.</p>\n"
-        "</body>\n"
-        "</html>";
-    
-    HttpResponse response3 = HttpResponse()
-        .status(200)
-        .header("X-Custom-Header", "CustomValue")
-        .header("Cache-Control", "max-age=3600")
-        .header("Connection", "keep-alive")
-        .html(htmlContent)
-        .autoHeaders();
-    std::cout << response3.build() << std::endl;
+	std::cout << "\n=== Example 3: Complex HTML Response ===\n";
+	std::string htmlContent = 
+		"<!DOCTYPE html>\n"
+		"<html>\n"
+		"<head><title>Welcome</title></head>\n"
+		"<body>\n"
+		"  <h1>Welcome to Our Site</h1>\n"
+		"  <p>This is a complete HTTP response example.</p>\n"
+		"</body>\n"
+		"</html>";
+	
+	HttpResponse response3 = HttpResponse()
+		.status(200)
+		.header("X-Custom-Header", "CustomValue")
+		.header("Cache-Control", "max-age=3600")
+		.header("Connection", "keep-alive")
+		.html(htmlContent)
+		.autoHeaders();
+	std::cout << response3.build() << std::endl;
 
-    std::cout << "\n=== Example 4: 302 Redirect ===\n";
-    HttpResponse response4 = ResponseFactory::redirect("https://example.com/new-location");
-    std::cout << response4.build() << std::endl;
+	std::cout << "\n=== Example 4: 302 Redirect ===\n";
+	HttpResponse response4 = ResponseFactory::redirect("https://example.com/new-location");
+	std::cout << response4.build() << std::endl;
 
-    std::cout << "\n=== Example 5: 201 Created with JSON ===\n";
-    HttpResponse response5 = HttpResponse()
-        .status(201)
-        .header("X-Request-ID", "abc123xyz")
-        .header("Location", "/api/users/42")
-        .json("{\"id\": 42, \"username\": \"john_doe\", \"created\": true}")
-        .autoHeaders();
-    std::cout << response5.build() << std::endl;
+	std::cout << "\n=== Example 5: 201 Created with JSON ===\n";
+	HttpResponse response5 = HttpResponse()
+		.status(201)
+		.header("X-Request-ID", "abc123xyz")
+		.header("Location", "/api/users/42")
+		.json("{\"id\": 42, \"username\": \"john_doe\", \"created\": true}")
+		.autoHeaders();
+	std::cout << response5.build() << std::endl;
 
-    std::cout << "\n=== Example 6: Plain Text Response ===\n";
-    HttpResponse response6 = HttpResponse()
-        .status(200)
-        .text("This is a plain text response.\nIt can contain multiple lines.\nHere's line 3.")
-        .autoHeaders();
-    std::cout << response6.build() << std::endl;
+	std::cout << "\n=== Example 6: Plain Text Response ===\n";
+	HttpResponse response6 = HttpResponse()
+		.status(200)
+		.text("This is a plain text response.\nIt can contain multiple lines.\nHere's line 3.")
+		.autoHeaders();
+	std::cout << response6.build() << std::endl;
 
-    std::cout << "\n=== Example 7: Serve HTML File ===\n";
-    // Assuming you have a file named "index.html"
-    HttpResponse response7 = HttpResponse()
-        .status(200)
-        .file("index.html")  // Auto-detects Content-Type as text/html
-        .autoHeaders();
-    std::cout << response7.build() << std::endl;
+	std::cout << "\n=== Example 7: Serve HTML File ===\n";
+	// Assuming you have a file named "index.html"
+	HttpResponse response7 = HttpResponse()
+		.status(200)
+		.file("index.html")  // Auto-detects Content-Type as text/html
+		.autoHeaders();
+	std::cout << response7.build() << std::endl;
 
-    std::cout << "\n=== Example 8: Serve Image File ===\n";
-    HttpResponse response8 = ResponseFactory::serveFile("logo.png");
-    std::cout << response8.build() << std::endl;
+	std::cout << "\n=== Example 8: Serve Image File ===\n";
+	HttpResponse response8 = ResponseFactory::serveFile("logo.png");
+	std::cout << response8.build() << std::endl;
 
-    std::cout << "\n=== Example 9: Manual File Load with Custom Headers ===\n";
-    HttpResponse response9 = HttpResponse()
-        .status(200)
-        .header("Cache-Control", "public, max-age=86400")
-        .bodyFromFile("data.json")
-        .contentType("application/json")
-        .autoHeaders();
-    std::cout << response9.build() << std::endl;
+	std::cout << "\n=== Example 9: Manual File Load with Custom Headers ===\n";
+	HttpResponse response9 = HttpResponse()
+		.status(200)
+		.header("Cache-Control", "public, max-age=86400")
+		.bodyFromFile("data.json")
+		.contentType("application/json")
+		.autoHeaders();
+	std::cout << response9.build() << std::endl;
 
-    return 0;
+	return 0;
 }
 */

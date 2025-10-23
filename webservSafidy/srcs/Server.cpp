@@ -122,6 +122,17 @@ const LocationConfig_t*	Server::getLocationsConfig(const std::string& uri) const
 	return NULL;
 }
 
+bool	Server::getLocationAutoindex(const std::string& uri) const
+{
+	std::string path = uri;
+	if (isUriValidFile(uri))
+		path = getParentPath(uri);
+	const LocationConfig_t* loc = getLocationsConfig(path);
+	if (loc)
+		return loc->autoindex;
+	return false;
+}
+
 const std::vector<std::string>*	Server::getLocationMethods(const std::string& uri) const
 {
 	std::string path = uri;

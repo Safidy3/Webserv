@@ -6,7 +6,7 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:39 by safandri          #+#    #+#             */
-/*   Updated: 2025/09/20 15:25:41 by safandri         ###   ########.fr       */
+/*   Updated: 2025/10/23 08:34:20 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,8 @@
 #include <ctime>
 #include <cctype>
 #include <filesystem>
+
+#include <dirent.h>
 
 #include <iostream>		// for cout/cerr
 #include <arpa/inet.h>	// for ip inet_pton()
@@ -62,8 +64,7 @@ struct LocationConfig_t
 	std::string					cgi_extension;
 	std::string					cgi_path;
 
-	LocationConfig_t(): autoindex(false),
-						redirect_code(0) {}
+	LocationConfig_t(): autoindex(false), redirect_code(0) {}
 };
 
 // Server configuration structure
@@ -97,6 +98,19 @@ struct CGIResult
 	bool		timedOut;
 
 	CGIResult() : exitCode(-1), timedOut(false) {}
+};
+
+// Directory entry structure
+struct DirectoryEntry
+{
+	std::string	name;
+	bool		isDirectory;
+	long		size;
+	std::string	modifiedTime;
+
+	DirectoryEntry() : isDirectory(false), size(0) {}
+	DirectoryEntry(const std::string& n, bool isDir, long s, const std::string& time)
+		: name(n), isDirectory(isDir), size(s), modifiedTime(time) {}
 };
 
 struct Data

@@ -25,10 +25,10 @@ public:
 	HTTPResponse	generateResponse()
 	{
 		std::string relativePath;
-		
+
 		if (!server.isValidUri(request.uriPath))
 			return ResponseFactory::notFound_404();
-		
+
 		relativePath = server.getLocationValidIndex(request.uriPath);
 		if (!server.isValidMethod(request.uriPath, request.method))
 			return ResponseFactory::methodNotAllowed_405();
@@ -45,15 +45,14 @@ public:
 
 	HTTPResponse	GETHandler(const std::string& relativePath)
 	{
-
 		// Check if CGI request
 		if (cgiHandler.isCGIRequest())
 			return cgiHandler.executeCGI(relativePath);
-
 		if (ftIsFile(relativePath))
 			return ResponseFactory::ok().bodyFromFile(relativePath).autoHeaders();
-		else
-			return ResponseFactory::forbidden_403();
+		else if (!ftIsFile(relativePath) && server.getLocationAutoindex(request.uriPath))
+			return ResponseFactory::listDirectory(server.getLocationRoot(request.uriPath));
+		return ResponseFactory::forbidden_403();
 	}
 
 	HTTPResponse	POSTHandler(const std::string& relativePath)
