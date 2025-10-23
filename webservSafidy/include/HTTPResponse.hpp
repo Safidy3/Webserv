@@ -139,7 +139,7 @@ public:
 
 		file.close();
 		body_ = content;
-		contentType("text/html; charset=utf-8");
+		contentType(getMimeType(filepath));
 		return *this;
 	}
 
@@ -157,40 +157,21 @@ public:
 			ext[i] = tolower(ext[i]);
 
 		// Common MIME types
-		if (ext == "html" || ext == "htm")
-			return "text/html";
-		if (ext == "css")
-			return "text/css";
-		if (ext == "js")
-			return "application/javascript";
-		if (ext == "json")
-			return "application/json";
-		if (ext == "xml")
-			return "application/xml";
-		if (ext == "txt")
-			return "text/plain";
-		if (ext == "pdf")
-			return "application/pdf";
-		if (ext == "jpg" || ext == "jpeg")
-			return "image/jpeg";
-		if (ext == "png")
-			return "image/png";
-		if (ext == "gif")
-			return "image/gif";
-		if (ext == "svg")
-			return "image/svg+xml";
-		if (ext == "ico")
-			return "image/x-icon";
-		if (ext == "zip")
-			return "application/zip";
-		if (ext == "mp3")
-			return "audio/mpeg";
-		if (ext == "mp4")
-			return "video/mp4";
-		if (ext == "woff")
-			return "font/woff";
-		if (ext == "woff2")
-			return "font/woff2";
+		if (ext == "html" || ext == "htm" || ext == "py") return "text/html";
+		if (ext == "css") return "text/css";
+		if (ext == "js") return "application/javascript";
+		if (ext == "json") return "application/json";
+		if (ext == "xml") return "application/xml";
+		if (ext == "pdf") return "application/pdf";
+		if (ext == "zip") return "application/zip";
+		if (ext == "txt") return "text/plain";
+		if (ext == "jpg" || ext == "jpeg") return "image/jpeg";
+		if (ext == "png") return "image/png";
+		if (ext == "gif") return "image/gif";
+		if (ext == "svg") return "image/svg+xml";
+		if (ext == "ico") return "image/x-icon";
+		if (ext == "mp3") return "audio/mpeg";
+		if (ext == "mp4") return "video/mp4";
 
 		return "application/octet-stream"; // Default binary type
 	}
@@ -219,7 +200,7 @@ public:
 	}
 
 	// Build the final HTTP response string
-	std::string build() const
+	std::string build(bool includeBody = true) const
 	{
 		std::ostringstream response;
 
@@ -236,7 +217,7 @@ public:
 		response << "\r\n";
 
 		// Body
-		if (!body_.empty())
+		if (includeBody && !body_.empty())
 			response << body_;
 
 		return response.str();
@@ -251,10 +232,10 @@ public:
 		return (it != headers_.end()) ? it->second : "";
 	}
 
-	void printResponse() const
+	void printResponse(bool includeBody = true) const
 	{
 		std::cout << "\n----- HTTP Response -----\n\n";
-		std::cout << build() << "\n\n============================================================\n";
+		std::cout << build(includeBody) << "\n\n============================================================\n";
 	}
 };
 

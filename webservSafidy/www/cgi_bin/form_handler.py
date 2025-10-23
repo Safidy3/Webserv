@@ -26,6 +26,7 @@ def main():
 		print("<a href=\"../html/index.html\">main</a></br>")
 		print("<a href=\"../root.html\">Root</a>")
 
+	print("<link rel=\"stylesheet\" href=\"../static/style.css\">")
 	print("</body></html>")
 
 if __name__ == "__main__":

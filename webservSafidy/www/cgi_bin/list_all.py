@@ -9,7 +9,7 @@ def main():
 	method = os.environ.get("REQUEST_METHOD", "GET")
 	csv_file_path = 'data.csv'
 
-	print("Content-Type: text/html\n")
+	# print("Content-Type: text/html\n")
 	print("<html><body>")
 	print("<h2>Python CGI Demo</h2>")
 
@@ -28,6 +28,7 @@ def main():
 
 	print("<a href=\"../html/index.html\">main</a></br>")
 	print("<a href=\"../root.html\">Root</a>")
+	print("<link rel=\"stylesheet\" href=\"../static/style.css\">")
 	print("</body></html>")
 
 

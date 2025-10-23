@@ -7,14 +7,13 @@ def parse_url_query(query):
 	query_params = parse_qs(query) # Parse the query string into a dictionary
 	return {key: value[0] for key, value in query_params.items()}
 
-
 # Detect the request method (GET or POST)
 
 def main():
-	method = os.environ.get("REQUEST_METHOD", "GET")
 	print("Content-Type: text/html\n")
 	print("<html><body>")
 	print("<h2>Python CGI Delete Demo</h2>")	
+	method = os.environ.get("REQUEST_METHOD", "GET")
 
 	if method == "DELETE":
 		print("<p>user deleted successfully !</p>")
@@ -27,6 +26,7 @@ def main():
 	print("<p>by!</p>")
 	print("<a href=\"../html/index.html\">main</a></br>")
 	print("<a href=\"../root.html\">Root</a>")
+	print("<link rel=\"stylesheet\" href=\"../static/style.css\">")
 	print("</body></html>")
 
 if __name__ == "__main__":

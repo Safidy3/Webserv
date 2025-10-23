@@ -1,0 +1,50 @@
+/* General body styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+	height: 100%;
+	width: 100%;
+    margin: 0;
+    padding-top: 30px;
+	padding: 30px;
+}
+
+/* Center content */
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header styling */
+h1 {
+    color: #4CAF50;
+    text-align: center;
+    font-size: 2.5em;
+	margin-top: 0;
+}
+
+/* Paragraph and link styling */
+p {
+    font-size: 1.2em;
+    line-height: 1.5;
+}
+
+a {
+    color: #007BFF;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Add some spacing between the links */
+p + p {
+    margin-top: 10px;
+}

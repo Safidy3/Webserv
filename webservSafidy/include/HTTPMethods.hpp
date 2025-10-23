@@ -32,11 +32,11 @@ public:
 		relativePath = server.getLocationValidIndex(request.uriPath);
 		if (!server.isValidMethod(request.uriPath, request.method))
 			return ResponseFactory::methodNotAllowed_405();
-		
+
 		if (request.method == "GET")
-		return GETHandler(relativePath);
+			return GETHandler(relativePath);
 		else if (request.method == "POST")
-		return POSTHandler(relativePath);
+			return POSTHandler(relativePath);
 		else if (request.method == "DELETE")
 			return DELETEHandler(relativePath);
 		else
