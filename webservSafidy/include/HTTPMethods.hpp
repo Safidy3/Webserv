@@ -51,7 +51,12 @@ public:
 		if (ftIsFile(relativePath))
 			return ResponseFactory::ok().bodyFromFile(relativePath).autoHeaders();
 		else if (!ftIsFile(relativePath) && server.getLocationAutoindex(request.uriPath))
-			return ResponseFactory::listDirectory(server.getLocationRoot(request.uriPath));
+		{
+			const std::string validIndex = server.getLocationValidIndex(request.uriPath);
+			if (!validIndex.empty())
+				return ResponseFactory::ok().bodyFromFile(validIndex).autoHeaders();
+			return ResponseFactory::listDirectory(server.getLocationRoot(request.uriPath) + request.uriPath.substr(server.getLocationsConfig(request.uriPath)->path.length()));
+		}
 		return ResponseFactory::forbidden_403();
 	}
 

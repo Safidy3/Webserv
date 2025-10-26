@@ -165,13 +165,13 @@ const std::string	Server::getLocationValidIndex(const std::string& locationPath)
 			return _config.root + locationPath;
 	}
 
-	std::string fullPath = getLocationRoot(locationPath);
+	std::string rootPath = getLocationRoot(locationPath);
 	const LocationConfig_t* loc = getLocationsConfig(locationPath);
 	if (!loc)
 		return "";
 	for (size_t i = 0; i < loc->index.size(); i++)
 	{
-		fullPath += loc->index[i];
+		std::string fullPath = rootPath + loc->index[i];
 		if (ftFileExists(fullPath))
 			return fullPath;
 	}
