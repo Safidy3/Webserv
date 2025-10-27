@@ -243,42 +243,18 @@ public:
 class DirectoryListing
 {
 private:
-	std::string path_;
-	std::string title_;
-	std::vector<DirectoryEntry> entries_;
-	bool showParent_;
+	std::string					path_;
+	std::string					title_;
+	std::vector<DirectoryEntry>	entries_;
+	bool						showParent_;
 
-	std::string formatSize(long bytes) const {
-		if (bytes < 1024) {
-			std::ostringstream oss;
-			oss << bytes << " B";
-			return oss.str();
-		} else if (bytes < 1024 * 1024) {
-			std::ostringstream oss;
-			oss << (bytes / 1024) << " KB";
-			return oss.str();
-		} else if (bytes < 1024 * 1024 * 1024) {
-			std::ostringstream oss;
-			oss << (bytes / (1024 * 1024)) << " MB";
-			return oss.str();
-		} else {
-			std::ostringstream oss;
-			oss << (bytes / (1024 * 1024 * 1024)) << " GB";
-			return oss.str();
-		}
-	}
-
-	std::string formatTime(time_t timestamp) const {
-		char buf[80];
-		struct tm* timeinfo = localtime(&timestamp);
-		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
-		return std::string(buf);
-	}
-
-	std::string escapeHtml(const std::string& text) const {
+	std::string escapeHtml(const std::string& text) const
+	{
 		std::string result;
-		for (size_t i = 0; i < text.length(); ++i) {
-			switch (text[i]) {
+		for (size_t i = 0; i < text.length(); ++i)
+		{
+			switch (text[i])
+			{
 				case '&': result += "&amp;"; break;
 				case '<': result += "&lt;"; break;
 				case '>': result += "&gt;"; break;
@@ -310,9 +286,7 @@ private:
 				if (stat(fullPath.c_str(), &statbuf) == 0)
 				{
 					bool isDir = S_ISDIR(statbuf.st_mode);
-					long size = isDir ? 0 : statbuf.st_size;
-					std::string modTime = formatTime(statbuf.st_mtime);
-					entries_.push_back(DirectoryEntry(name, isDir, size, modTime));
+					entries_.push_back(DirectoryEntry(name, isDir));
 				}
 			}
 		}
@@ -329,8 +303,7 @@ private:
 	}
 
 public:
-	DirectoryListing(const std::string& path)
-		: path_(path), title_("Index of " + path), showParent_(true){}
+	DirectoryListing(const std::string& path) : path_(path), title_("Index of " + path), showParent_(true) {}
 
 	DirectoryListing& title(const std::string& t)
 	{
@@ -350,107 +323,20 @@ public:
 			return "<html><body><h1>Error: Cannot read directory</h1></body></html>";
 			
 		std::ostringstream html;
-		html << "<!DOCTYPE html>\n"
-			<< "<html>\n"
-			<< "<head>\n"
-			<< "    <meta charset=\"utf-8\">\n"
-			<< "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
-			<< "    <title>" << escapeHtml(title_) << "</title>\n"
-			<< "    <style>\n"
-			<< "        body {\n"
-			<< "            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;\n"
-			<< "            max-width: 1200px;\n"
-			<< "            margin: 0 auto;\n"
-			<< "            padding: 20px;\n"
-			<< "            background: #f5f5f5;\n"
-			<< "        }\n"
-			<< "        h1 {\n"
-			<< "            color: #333;\n"
-			<< "            border-bottom: 2px solid #0066cc;\n"
-			<< "            padding-bottom: 10px;\n"
-			<< "        }\n"
-			<< "        table {\n"
-			<< "            width: 100%;\n"
-			<< "            background: white;\n"
-			<< "            border-collapse: collapse;\n"
-			<< "            box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n"
-			<< "        }\n"
-			<< "        th {\n"
-			<< "            background: #0066cc;\n"
-			<< "            color: white;\n"
-			<< "            padding: 12px;\n"
-			<< "            text-align: left;\n"
-			<< "            font-weight: 600;\n"
-			<< "        }\n"
-			<< "        td {\n"
-			<< "            padding: 10px 12px;\n"
-			<< "            border-bottom: 1px solid #eee;\n"
-			<< "        }\n"
-			<< "        tr:hover {\n"
-			<< "            background: #f9f9f9;\n"
-			<< "        }\n"
-			<< "        a {\n"
-			<< "            color: #0066cc;\n"
-			<< "            text-decoration: none;\n"
-			<< "        }\n"
-			<< "        a:hover {\n"
-			<< "            text-decoration: underline;\n"
-			<< "        }\n"
-			<< "        .icon {\n"
-			<< "            display: inline-block;\n"
-			<< "            width: 20px;\n"
-			<< "            text-align: center;\n"
-			<< "            margin-right: 8px;\n"
-			<< "        }\n"
-			<< "        .dir { color: #f39c12; }\n"
-			<< "        .file { color: #3498db; }\n"
-			<< "        .size { text-align: right; }\n"
-			<< "        .date { color: #777; }\n"
-			<< "    </style>\n"
-			<< "</head>\n"
-			<< "<body>\n"
-			<< "    <h1>" << escapeHtml(title_) << "</h1>\n"
-			<< "    <table>\n"
-			<< "        <thead>\n"
-			<< "            <tr>\n"
-			<< "                <th>Name</th>\n"
-			<< "                <th class=\"size\">Size</th>\n"
-			<< "                <th>Modified</th>\n"
-			<< "            </tr>\n"
-			<< "        </thead>\n"
-			<< "        <tbody>\n";
+		html << "<html><body><h1>\n" << escapeHtml(title_) << "</h1>";
 
 		// Parent directory link
-		if (showParent_) {
-			html << "            <tr>\n"
-				<< "                <td><span class=\"icon dir\">📁</span><a href=\"../\">Parent Directory</a></td>\n"
-				<< "                <td class=\"size\">-</td>\n"
-				<< "                <td class=\"date\">-</td>\n"
-				<< "            </tr>\n";
-		}
+		if (showParent_)
+			html << "<p>📁 Parent Directory</p>\n";
 
 		// Directory entries
 		for (size_t i = 0; i < entries_.size(); ++i)
 		{
 			const DirectoryEntry&	entry = entries_[i];
 			std::string				icon = entry.isDirectory ? "📁" : "📄";
-			std::string				iconClass = entry.isDirectory ? "dir" : "file";
-			std::string				href = escapeHtml(entry.name);
-			if (entry.isDirectory) href += "/";
-			html << "            <tr>\n"
-				<< "                <td><span class=\"icon " << iconClass << "\">" << icon << "</span>"
-				<< "<a href=\"" << href << "\">" << escapeHtml(entry.name) << "</a></td>\n"
-				<< "                <td class=\"size\">" 
-				<< (entry.isDirectory ? "-" : formatSize(entry.size)) << "</td>\n"
-				<< "                <td class=\"date\">" << escapeHtml(entry.modifiedTime) << "</td>\n"
-				<< "            </tr>\n";
+			html << "<p>" << icon << " " << escapeHtml(entry.name) << "</p>";
 		}
-
-		html << "        </tbody>\n"
-			<< "    </table>\n"
-			<< "</body>\n"
-			<< "</html>";
-
+		html << "</body></html>\n";
 		return html.str();
 	}
 
@@ -578,7 +464,7 @@ public:
 	static HTTPResponse listDirectory(const std::string& location)
 	{
 		DirectoryListing listing(location);
-		return listing.buildResponse();
+		return listing.showParentDirectory(false).buildResponse();
 	}
 };
 

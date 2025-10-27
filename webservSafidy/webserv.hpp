@@ -6,7 +6,7 @@
 /*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/11 14:39:39 by safandri          #+#    #+#             */
-/*   Updated: 2025/10/23 08:34:20 by safandri         ###   ########.fr       */
+/*   Updated: 2025/10/27 09:06:55 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,12 +105,10 @@ struct DirectoryEntry
 {
 	std::string	name;
 	bool		isDirectory;
-	long		size;
-	std::string	modifiedTime;
 
-	DirectoryEntry() : isDirectory(false), size(0) {}
-	DirectoryEntry(const std::string& n, bool isDir, long s, const std::string& time)
-		: name(n), isDirectory(isDir), size(s), modifiedTime(time) {}
+	DirectoryEntry() : isDirectory(false) {}
+	DirectoryEntry(const std::string& _name, bool isDir)
+		: name(_name), isDirectory(isDir) {}
 };
 
 struct Data

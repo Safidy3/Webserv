@@ -39,8 +39,7 @@ public:
 			return POSTHandler(relativePath);
 		else if (request.method == "DELETE")
 			return DELETEHandler(relativePath);
-		else
-			return ResponseFactory::methodNotAllowed_405();
+		return ResponseFactory::methodNotAllowed_405();
 	}
 
 	HTTPResponse	GETHandler(const std::string& relativePath)
