@@ -245,16 +245,41 @@ class DirectoryListing
 private:
 	std::string					path_;
 	std::string					title_;
-	std::vector<DirectoryEntry>	entries_;
+	std::vector<DirectoryEntry> entries_;
 	bool						showParent_;
+	std::string					serverRoot_;
 
-	std::string escapeHtml(const std::string& text) const
-	{
+	std::string formatSize(long bytes) const {
+		if (bytes < 1024) {
+			std::ostringstream oss;
+			oss << bytes << " B";
+			return oss.str();
+		} else if (bytes < 1024 * 1024) {
+			std::ostringstream oss;
+			oss << (bytes / 1024) << " KB";
+			return oss.str();
+		} else if (bytes < 1024 * 1024 * 1024) {
+			std::ostringstream oss;
+			oss << (bytes / (1024 * 1024)) << " MB";
+			return oss.str();
+		} else {
+			std::ostringstream oss;
+			oss << (bytes / (1024 * 1024 * 1024)) << " GB";
+			return oss.str();
+		}
+	}
+
+	std::string formatTime(time_t timestamp) const {
+		char buf[80];
+		struct tm* timeinfo = localtime(&timestamp);
+		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
+		return std::string(buf);
+	}
+
+	std::string escapeHtml(const std::string& text) const {
 		std::string result;
-		for (size_t i = 0; i < text.length(); ++i)
-		{
-			switch (text[i])
-			{
+		for (size_t i = 0; i < text.length(); ++i) {
+			switch (text[i]) {
 				case '&': result += "&amp;"; break;
 				case '<': result += "&lt;"; break;
 				case '>': result += "&gt;"; break;
@@ -286,7 +311,9 @@ private:
 				if (stat(fullPath.c_str(), &statbuf) == 0)
 				{
 					bool isDir = S_ISDIR(statbuf.st_mode);
-					entries_.push_back(DirectoryEntry(name, isDir));
+					long size = isDir ? 0 : statbuf.st_size;
+					std::string modTime = formatTime(statbuf.st_mtime);
+					entries_.push_back(DirectoryEntry(name, isDir, size, modTime));
 				}
 			}
 		}
@@ -303,7 +330,8 @@ private:
 	}
 
 public:
-	DirectoryListing(const std::string& path) : path_(path), title_("Index of " + path), showParent_(true) {}
+	DirectoryListing(const std::string& path, const std::string& serverRoot = "")
+		: path_(path), title_("Index of " + path), showParent_(true), serverRoot_(serverRoot) {}
 
 	DirectoryListing& title(const std::string& t)
 	{
@@ -322,21 +350,47 @@ public:
 		if (!scanDirectory(path_))
 			return "<html><body><h1>Error: Cannot read directory</h1></body></html>";
 			
-		std::ostringstream html;
-		html << "<html><body><h1>\n" << escapeHtml(title_) << "</h1>";
+		std::ostringstream	html;
+		html << "<html>\n"
+			<< "<head><link rel=\"stylesheet\" href=\"./static/listDirectory.css\"></head>\n"
+			<< "<body><h1>" << escapeHtml(title_) << "</h1>\n"
+			<< "<table><thead><tr>\n"
+			<< "	<th>Name</th>\n"
+			<< "	<th class=\"size\">Size</th>\n"
+			<< "	<th>Modified</th>\n"
+			<< "</tr></thead><tbody>\n";
 
 		// Parent directory link
 		if (showParent_)
-			html << "<p>📁 Parent Directory</p>\n";
+		{
+			html << " <tr>\n"
+				<< "    <td><span class=\"icon dir\">📁</span><a href=\"../\">Parent Directory</a></td>\n"
+				<< "    <td class=\"size\">-</td>\n"
+				<< "    <td class=\"date\">-</td>\n"
+				<< "</tr>\n";
+		}
 
 		// Directory entries
 		for (size_t i = 0; i < entries_.size(); ++i)
 		{
 			const DirectoryEntry&	entry = entries_[i];
 			std::string				icon = entry.isDirectory ? "📁" : "📄";
-			html << "<p>" << icon << " " << escapeHtml(entry.name) << "</p>";
+			std::string				iconClass = entry.isDirectory ? "dir" : "file";
+			std::string				href = (path_ + (entry.isDirectory ? entry.name + "/" : entry.name)).substr(serverRoot_.length());
+
+			// std::cout << "****** PATH : " << path_ << std::endl;
+			// std::cout << "****** SERVER ROOT : " << serverRoot_ << std::endl;
+			// std::cout << "****** HREF : " << href << std::endl;
+
+			// if (entry.isDirectory) href += "/";
+
+			html << "<tr><td><span class=\"icon " << iconClass << "\">" << icon << "</span>"
+				<< "<a href=\"" << href << "\">" << escapeHtml(entry.name) << "</a></td>\n"
+				<< "<td class=\"size\">" << (entry.isDirectory ? "-" : formatSize(entry.size)) << "</td>\n"
+				<< "<td class=\"date\">" << escapeHtml(entry.modifiedTime) << "</td></tr>\n";
 		}
-		html << "</body></html>\n";
+		html << "</tbody></table></body></html>";
+
 		return html.str();
 	}
 
@@ -461,10 +515,10 @@ public:
 			.autoHeaders();
 	}
 
-	static HTTPResponse listDirectory(const std::string& location)
+	static HTTPResponse listDirectory(const std::string& location, const std::string& serverRoot)
 	{
-		DirectoryListing listing(location);
-		return listing.showParentDirectory(false).buildResponse();
+		DirectoryListing listing(location, serverRoot);
+		return listing.buildResponse();
 	}
 };
 
