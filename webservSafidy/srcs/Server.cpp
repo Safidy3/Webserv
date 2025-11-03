@@ -270,11 +270,12 @@ void	Server::printServer()
 void	Server::printLocation(const LocationConfig_t &location)
 {
 	std::cout << "\tLocation: " << location.path << std::endl;
+	std::cout << "\t  Path     : " << location.path << std::endl;
 	if (!location.root.empty())
-		std::cout << "\t  Root: " << location.root << std::endl;
+		std::cout << "\t  Root     : " << location.root << std::endl;
 	if (!location.index.empty())
 	{
-		std::cout << "\t  Index: ";
+		std::cout << "\t  Index    : ";
 		for (size_t i = 0; i < location.index.size(); i++)
 		{
 			std::cout << location.index[i];
@@ -285,7 +286,7 @@ void	Server::printLocation(const LocationConfig_t &location)
 	}
 	if (!location.methods.empty())
 	{
-		std::cout << "\t  Methods: ";
+		std::cout << "\t  Methods  : ";
 		for (size_t i = 0; i < location.methods.size(); i++)
 		{
 			std::cout << location.methods[i];
@@ -301,5 +302,6 @@ void	Server::printLocation(const LocationConfig_t &location)
 	if (!location.cgi_extension.empty())
 		std::cout << "\t  CGI Extension: " << location.cgi_extension << std::endl;
 	if (!location.cgi_path.empty())
-		std::cout << "\t  CGI Path: " << location.cgi_path << std::endl;
+		std::cout << "\t  CGI Path : " << location.cgi_path << std::endl;
+	std::cout << std::endl;
 }
