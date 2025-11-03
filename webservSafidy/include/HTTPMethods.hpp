@@ -53,7 +53,10 @@ public:
 			const std::string validIndex = server.getLocationValidIndex(request.uriPath);
 			if (!validIndex.empty())
 				return ResponseFactory::ok().bodyFromFile(validIndex).autoHeaders();
-			return ResponseFactory::listDirectory(server.getLocationRoot(request.uriPath) + request.uriPath.substr(server.getLocationsConfigFromURI(request.uriPath)->path.length()), server.getRoot());
+
+			// std::string listPath = server.getLocationRoot(request.uriPath) + request.uriPath.substr(server.getLocationsConfigFromURI(request.uriPath)->path.length());
+			std::string listPath = server.getAbsolutePath(request.uriPath);
+			return ResponseFactory::listDirectory(listPath, server.getRoot());
 		}
 		return ResponseFactory::forbidden_403();
 	}

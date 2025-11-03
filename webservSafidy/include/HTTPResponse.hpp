@@ -361,7 +361,7 @@ public:
 	{
 		if (!scanDirectory(path_))
 			return "<html><body><h1>Error: Cannot read directory</h1></body></html>";
-		
+
 		std::ostringstream	html;
 		html << "<html>\n"
 			<< "<head><style>" 
@@ -425,7 +425,7 @@ public:
 		// Parent directory link
 		if (showParent_)
 		{
-			html << " <tr>\n"
+			html << "<tr>\n"
 				<< "    <td><span class=\"icon dir\">📁</span><a href=\"../\">Parent Directory</a></td>\n"
 				<< "    <td class=\"size\">-</td>\n"
 				<< "    <td class=\"date\">-</td>\n"
@@ -438,11 +438,12 @@ public:
 			const DirectoryEntry&	entry = entries_[i];
 			std::string				icon = entry.isDirectory ? "📁" : "📄";
 			std::string				iconClass = entry.isDirectory ? "dir" : "file";
-			std::string				href = (path_ + (entry.isDirectory ? entry.name + "/" : entry.name)).substr(serverRoot_.length());
+			std::string				href = (path_ + "/" + (entry.isDirectory ? entry.name + "/" : entry.name)).substr(serverRoot_.length());
 
-			// std::cout << "****** PATH : " << path_ << std::endl;
+			// std::cout << "\n****** PATH        : " << path_ << std::endl;
+			// std::cout << "****** ENTRY       : " << entry.name << std::endl;
 			// std::cout << "****** SERVER ROOT : " << serverRoot_ << std::endl;
-			// std::cout << "****** HREF : " << href << std::endl;
+			// std::cout << "****** HREF        : " << href << std::endl << std::endl;
 
 			// if (entry.isDirectory) href += "/";
 
@@ -585,7 +586,14 @@ public:
 };
 
 #endif
+/*
+****** PATH        : www/test/directory2
+****** ENTRY       : directory21
+****** SERVER ROOT : www/
+****** HREF        : test/directory2/directory21/
 
+/test/directory2/test/directory2/directory21/
+*/
 
 
 

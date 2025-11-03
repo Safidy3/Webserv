@@ -165,12 +165,6 @@ bool	Server::isValidUri(const std::string& path) const
 		fullPath.erase(fullPath.size() - 1);
 	fullPath += path.substr(location->path.length());
 
-	std::cout << "\n\nlocation root : " << location->root << std::endl;
-	std::cout << "\n================= 1 :\n";
-	std::cout << "fullPath : " << fullPath << std::endl;
-	std::cout << "uri : " << path << std::endl;
-	std::cout << "fullPath : " << fullPath << std::endl;
-
 	// 3️⃣ Check if the file or directory exists on disk
 	struct stat s;
 	if (stat(fullPath.c_str(), &s) == 0)
@@ -200,18 +194,12 @@ bool	Server::isUriValidFile(const std::string& uri) const
 		fullPath.erase(fullPath.size() - 1);
 	fullPath += uri.substr(location->path.length());
 
-	std::cout << "\n================= 2 :\n";
-	std::cout << "uri : " << uri << std::endl;
-	std::cout << "uri.substr(location->path.length()) : " << uri.substr(location->path.length()) << std::endl;
-	std::cout << "fullPath : " << fullPath << std::endl;
-
 	if (ftIsFile(fullPath))
 		return true;
 	return false;
 };
 
 /*=================================================================================================*/
-
 
 const LocationConfig_t*	Server::getLocationsConfigFromURI(const std::string& uri) const
 {
@@ -272,6 +260,22 @@ const std::string	Server::getLocationValidIndex(const std::string& locationPath)
 			return fullPath;
 	}
 	return "";
+}
+
+const std::string	Server::getAbsolutePath(const std::string& uri) const
+{
+	// 1️⃣ Check if it matches any configured location
+	const LocationConfig_t* location = getLocationsConfigFromURI(uri);
+	if (!location)
+		return "";
+
+	// 2️⃣ Build the absolute path from server root
+	std::string fullPath = location->root;
+	if (fullPath.size() > 1 && fullPath[fullPath.size() - 1] == '/')
+		fullPath.erase(fullPath.size() - 1);
+	fullPath += uri.substr(location->path.length());
+	std::cout << "\n *** PATH 2 : " << fullPath << std::endl;
+	return fullPath;
 }
 
 const std::string*	Server::getErrorPage(int code) const

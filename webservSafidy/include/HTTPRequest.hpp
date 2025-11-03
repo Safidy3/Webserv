@@ -196,9 +196,7 @@ private:
 			errorMessage = "Invalid request line";
 			return false;
 		}
-		if (method != "GET" && method != "POST" && method != "PUT" &&
-			method != "DELETE" && method != "HEAD" && method != "OPTIONS" &&
-			method != "PATCH" && method != "TRACE" && method != "CONNECT")
+		if (method != "GET" && method != "POST" && method != "DELETE")
 		{
 			errorMessage = "Invalid HTTP method";
 			return false;
@@ -257,6 +255,9 @@ private:
 		if (queryStart == std::string::npos)
 		{
 			request.uriPath = uri;
+			if (request.uriPath.size() > 1 && request.uriPath[request.uriPath.size() - 1] == '/')
+				request.uriPath = request.uriPath.erase(uri.size() - 1);
+			std::cout << "******* URI : " << uri << std::endl;
 			return;
 		}
 		request.uriPath = uri.substr(0, queryStart);
