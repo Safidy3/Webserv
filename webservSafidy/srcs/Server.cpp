@@ -111,36 +111,132 @@ void	Server::removeClient(Client* client)
 		std::cerr << "Client not found in server's client list\n";
 }
 
-const LocationConfig_t*	Server::getLocationsConfig(const std::string& uri) const
-{
-	std::string path = uri;
-	if (isUriValidFile(uri))
-		path = getParentPath(uri);
-	for (size_t i = 0; i < _config.locations.size(); ++i)
-		if (path == _config.locations[i].path)
-			return &_config.locations[i];
-	return NULL;
-}
 
-bool	Server::getLocationAutoindex(const std::string& uri) const
+/*=================================================================================================*/
+
+
+bool	Server::isValidLocation(const std::string& location) const
 {
-	std::string path = uri;
-	if (isUriValidFile(uri))
-		path = getParentPath(uri);
-	const LocationConfig_t* loc = getLocationsConfig(path);
-	if (loc)
-		return loc->autoindex;
+	for (size_t i = 0; i < _config.locations.size(); ++i)
+		if (location == _config.locations[i].path)
+			return true;
 	return false;
 }
 
-const std::vector<std::string>*	Server::getLocationMethods(const std::string& uri) const
+bool	Server::isValidMethod(const std::string& uri, const std::string& method) const
 {
-	std::string path = uri;
-	if (isUriValidFile(uri))
-		path = getParentPath(uri);
-	const LocationConfig_t* loc = getLocationsConfig(path);
-	if (loc)
-		return &loc->methods;
+	const LocationConfig_t* Location = getLocationsConfigFromURI(uri);
+	if (Location)
+	{
+		if (!Location->methods.empty())
+		{
+			for (size_t i = 0; i < Location->methods.size(); ++i)
+				if (method == Location->methods[i])
+					return true;
+			return false;
+		}
+	}
+	return true; // If no methods are specified, all are allowed
+};
+
+bool	Server::isValidContentType(const std::string& contentType) const
+{
+	if (!_mimeTypes)
+		return false;
+	for (MimeTypes::const_iterator it = _mimeTypes->begin(); it != _mimeTypes->end(); ++it)
+		if (it->second == contentType)
+			return true;
+	return false;
+};
+
+bool	Server::isValidUri(const std::string& path) const
+{
+	if (path.empty() || path[0] != '/')
+		return false;
+
+	// 1️⃣ Check if it matches any configured location
+	const LocationConfig_t* location = getLocationsConfigFromURI(path);
+	if (!location)
+		return false;
+
+	// 2️⃣ Build the absolute path from server root
+	std::string fullPath = location->root;
+	if (fullPath.size() > 1 && fullPath[fullPath.size() - 1] == '/')
+		fullPath.erase(fullPath.size() - 1);
+	fullPath += path.substr(location->path.length());
+
+	std::cout << "\n\nlocation root : " << location->root << std::endl;
+	std::cout << "\n================= 1 :\n";
+	std::cout << "fullPath : " << fullPath << std::endl;
+	std::cout << "uri : " << path << std::endl;
+	std::cout << "fullPath : " << fullPath << std::endl;
+
+	// 3️⃣ Check if the file or directory exists on disk
+	struct stat s;
+	if (stat(fullPath.c_str(), &s) == 0)
+		return true;
+
+	return false;
+}
+
+bool	Server::isLocationAutoindexOn(const std::string& uri) const
+{
+	const LocationConfig_t* location = getLocationsConfigFromURI(uri);
+	if (location)
+		return location->autoindex;
+	return false;
+}
+
+bool	Server::isUriValidFile(const std::string& uri) const
+{
+
+	std::string fullPath;
+	const LocationConfig_t* location = getLocationsConfigFromURI(uri);
+	if (!location)
+		return false;
+
+	fullPath = location->root;
+	if (fullPath.size() > 1 && fullPath[fullPath.size() - 1] == '/')
+		fullPath.erase(fullPath.size() - 1);
+	fullPath += uri.substr(location->path.length());
+
+	std::cout << "\n================= 2 :\n";
+	std::cout << "uri : " << uri << std::endl;
+	std::cout << "uri.substr(location->path.length()) : " << uri.substr(location->path.length()) << std::endl;
+	std::cout << "fullPath : " << fullPath << std::endl;
+
+	if (ftIsFile(fullPath))
+		return true;
+	return false;
+};
+
+/*=================================================================================================*/
+
+
+const LocationConfig_t*	Server::getLocationsConfigFromURI(const std::string& uri) const
+{
+	const LocationConfig_t* bestMatchLocation = NULL;
+	size_t bestLen = 0;
+	std::vector<LocationConfig_t>::const_iterator it;
+
+	for (it = _config.locations.begin(); it != _config.locations.end(); ++it)
+	{
+		const std::string& locPath = it->path;
+
+		// Match if URI starts with the location path
+		if (uri.find(locPath) == 0)
+		{
+			// Choose the longest match (most specific)
+			if (locPath.length() > bestLen)
+			{
+				bestMatchLocation = &(*it);
+				bestLen = locPath.length();
+			}
+		}
+	}
+
+	if (bestMatchLocation)
+		return bestMatchLocation;
 	return NULL;
 }
 
@@ -149,7 +245,7 @@ const std::string	Server::getLocationRoot(const std::string& uri) const
 	std::string path = uri;
 	if (isUriValidFile(uri))
 		path = getParentPath(uri);
-	const LocationConfig_t* loc = getLocationsConfig(path);
+	const LocationConfig_t* loc = getLocationsConfigFromURI(path);
 	if (loc)
 		return loc->root;
 	return "";
@@ -166,7 +262,7 @@ const std::string	Server::getLocationValidIndex(const std::string& locationPath)
 	}
 
 	std::string rootPath = getLocationRoot(locationPath);
-	const LocationConfig_t* loc = getLocationsConfig(locationPath);
+	const LocationConfig_t* loc = getLocationsConfigFromURI(locationPath);
 	if (!loc)
 		return "";
 	for (size_t i = 0; i < loc->index.size(); i++)
@@ -186,43 +282,7 @@ const std::string*	Server::getErrorPage(int code) const
 	return NULL;
 }
 
-bool	Server::isValidLocation(const std::string& location) const
-{
-	for (size_t i = 0; i < _config.locations.size(); ++i)
-		if (location == _config.locations[i].path)
-			return true;
-	return false;
-}
-
-bool	Server::isValidMethod(const std::string& uri, const std::string& method) const
-{
-	std::string path = uri;
-	if (isUriValidFile(uri))
-		path = getParentPath(uri);
-	
-	const std::vector<std::string>* methods = getLocationMethods(path);
-	if (!methods)
-		return false;
-	return std::find(methods->begin(), methods->end(), method) != methods->end();
-}
-
-bool	Server::isValidContentType(const std::string& contentType) const
-{
-	if (!_mimeTypes)
-		return false;
-	for (MimeTypes::const_iterator it = _mimeTypes->begin(); it != _mimeTypes->end(); ++it)
-		if (it->second == contentType)
-			return true;
-	return false;
-};
-
-bool	Server::isValidUri(const std::string& path) const
-{
-	// std::cout << "isValidUri check for path: " << path << std::endl;
-	if (isUriValidFile(path))
-		return true;
-	return getLocationsConfig(path) != NULL;
-};
+/*=================================================================================================*/
 
 
 void	Server::printServer()

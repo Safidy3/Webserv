@@ -47,39 +47,11 @@ public:
 	bool	isValidMethod(const std::string& path, const std::string& method) const;
 	bool	isValidUri(const std::string& path) const;
 	bool	isValidContentType(const std::string& contentType) const;
-	bool	isUriValidFile(const std::string& uri) const
-	{
-		std::string fullPath;
-
-		for (std::vector<LocationConfig_t>::const_iterator it = _config.locations.begin(); it != _config.locations.end(); ++it)
-		{
-			if (it->path == "/")
-				fullPath = _config.root + uri.substr(1);
-			else if (uri.find(it->path) == 0) // uri starts with location path
-				fullPath = it->root + uri.substr(it->path.length());
-			else
-				continue;
-			if (ftIsFile(fullPath))
-				break;
-		}
-		if (ftIsFile(fullPath))
-		{
-			// std::cout << "File found: " << fullPath << std::endl;
-			std::string location = getParentPath(uri);
-			if (isValidLocation(location))
-			{
-				// std::cout << "Valid location found: " << location << std::endl;
-				return true;
-			}
-		}
-		// std::cout << "Location not found for URI: " << uri << std::endl << std::endl;
-		return false;
-	};
+	bool	isLocationAutoindexOn(const std::string& path) const;
+	bool	isUriValidFile(const std::string& uri) const;
 
 	const std::string					getRoot() const { return _config.root; }
-	const LocationConfig_t*				getLocationsConfig(const std::string& path) const;
-	const std::vector<std::string>*		getLocationMethods(const std::string& path) const;
-	bool								getLocationAutoindex(const std::string& path) const;
+	const LocationConfig_t*				getLocationsConfigFromURI(const std::string& path) const;
 	
 	const std::string					getLocationRoot(const std::string& path) const;
 	const std::string*					getErrorPage(int code) const;

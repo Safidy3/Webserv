@@ -28,11 +28,10 @@ public:
 
 		if (!server.isValidUri(request.uriPath))
 			return ResponseFactory::notFound_404();
-
-		relativePath = server.getLocationValidIndex(request.uriPath);
 		if (!server.isValidMethod(request.uriPath, request.method))
 			return ResponseFactory::methodNotAllowed_405();
 
+		relativePath = server.getLocationValidIndex(request.uriPath);
 		if (request.method == "GET")
 			return GETHandler(relativePath);
 		else if (request.method == "POST")
@@ -49,12 +48,12 @@ public:
 			return cgiHandler.executeCGI(relativePath);
 		if (ftIsFile(relativePath))
 			return ResponseFactory::ok().bodyFromFile(relativePath).autoHeaders();
-		else if (!ftIsFile(relativePath) && server.getLocationAutoindex(request.uriPath))
+		else if (!ftIsFile(relativePath) && server.isLocationAutoindexOn(request.uriPath))
 		{
 			const std::string validIndex = server.getLocationValidIndex(request.uriPath);
 			if (!validIndex.empty())
 				return ResponseFactory::ok().bodyFromFile(validIndex).autoHeaders();
-			return ResponseFactory::listDirectory(server.getLocationRoot(request.uriPath) + request.uriPath.substr(server.getLocationsConfig(request.uriPath)->path.length()), server.getRoot());
+			return ResponseFactory::listDirectory(server.getLocationRoot(request.uriPath) + request.uriPath.substr(server.getLocationsConfigFromURI(request.uriPath)->path.length()), server.getRoot());
 		}
 		return ResponseFactory::forbidden_403();
 	}
