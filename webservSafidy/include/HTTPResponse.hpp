@@ -249,37 +249,49 @@ private:
 	bool						showParent_;
 	std::string					serverRoot_;
 
-	std::string formatSize(long bytes) const {
-		if (bytes < 1024) {
+	std::string formatSize(long bytes) const
+	{
+		if (bytes < 1024)
+		{
 			std::ostringstream oss;
 			oss << bytes << " B";
 			return oss.str();
-		} else if (bytes < 1024 * 1024) {
+		}
+		else if (bytes < 1024 * 1024)
+		{
 			std::ostringstream oss;
 			oss << (bytes / 1024) << " KB";
 			return oss.str();
-		} else if (bytes < 1024 * 1024 * 1024) {
+		}
+		else if (bytes < 1024 * 1024 * 1024)
+		{
 			std::ostringstream oss;
 			oss << (bytes / (1024 * 1024)) << " MB";
 			return oss.str();
-		} else {
+		}
+		else
+		{
 			std::ostringstream oss;
 			oss << (bytes / (1024 * 1024 * 1024)) << " GB";
 			return oss.str();
 		}
 	}
 
-	std::string formatTime(time_t timestamp) const {
+	std::string formatTime(time_t timestamp) const
+	{
 		char buf[80];
 		struct tm* timeinfo = localtime(&timestamp);
 		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
 		return std::string(buf);
 	}
 
-	std::string escapeHtml(const std::string& text) const {
+	std::string escapeHtml(const std::string& text) const
+	{
 		std::string result;
-		for (size_t i = 0; i < text.length(); ++i) {
-			switch (text[i]) {
+		for (size_t i = 0; i < text.length(); ++i)
+		{
+			switch (text[i])
+			{
 				case '&': result += "&amp;"; break;
 				case '<': result += "&lt;"; break;
 				case '>': result += "&gt;"; break;
@@ -349,10 +361,60 @@ public:
 	{
 		if (!scanDirectory(path_))
 			return "<html><body><h1>Error: Cannot read directory</h1></body></html>";
-			
+		
 		std::ostringstream	html;
 		html << "<html>\n"
-			<< "<head><link rel=\"stylesheet\" href=\"./static/listDirectory.css\"></head>\n"
+			<< "<head><style>" 
+			<< "	body {"
+			<< "	    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;"
+			<< "	    max-width: 1200px;"
+			<< "	    margin: 0 auto;"
+			<< "	    padding: 20px;"
+			<< "	    background: #f5f5f5;"
+			<< "	}"
+			<< "	h1 {"
+			<< "	    color: #333;"
+			<< "	    border-bottom: 2px solid #0066cc;"
+			<< "	    padding-bottom: 10px;"
+			<< "	}"
+			<< "	table {"
+			<< "	    width: 100%;"
+			<< "	    background: white;"
+			<< "	    border-collapse: collapse;"
+			<< "	    box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+			<< "	}"
+			<< "	th {"
+			<< "	    background: #0066cc;"
+			<< "	    color: white;"
+			<< "	    padding: 12px;"
+			<< "	    text-align: left;"
+			<< "	    font-weight: 600;"
+			<< "	}"
+			<< "	td {"
+			<< "	    padding: 10px 12px;"
+			<< "	    border-bottom: 1px solid #eee;"
+			<< "	}"
+			<< "	tr:hover {"
+			<< "	    background: #f9f9f9;"
+			<< "	}"
+			<< "	a {"
+			<< "	    color: #0066cc;"
+			<< "	    text-decoration: none;"
+			<< "	}"
+			<< "	a:hover {"
+			<< "	    text-decoration: underline;"
+			<< "	}"
+			<< "	.icon {"
+			<< "	    display: inline-block;"
+			<< "	    width: 20px;"
+			<< "	    text-align: center;"
+			<< "	    margin-right: 8px;"
+			<< "	}"
+			<< "	.dir { color: #f39c12; }"
+			<< "	.file { color: #3498db; }"
+			<< "	.size { text-align: right; }"
+			<< "	.date { color: #777; }"
+			<< "</style></head>\n"
 			<< "<body><h1>" << escapeHtml(title_) << "</h1>\n"
 			<< "<table><thead><tr>\n"
 			<< "	<th>Name</th>\n"
