@@ -27,9 +27,25 @@ public:
 		std::string relativePath;
 
 		if (!server.isValidUri(request.uriPath))
+		{
+			if (server.hasErrorPage(404))
+			{
+				std::string errorPagePath = server.getErrorPage(404);
+				std::cout << "ERROR PAGE PATH : " << errorPagePath << std::endl;
+				return ResponseFactory::notFound_404().bodyFromFile(errorPagePath).autoHeaders();
+			}
 			return ResponseFactory::notFound_404();
+		}
 		if (!server.isValidMethod(request.uriPath, request.method))
+		{
+			if (server.hasErrorPage(405))
+			{
+				std::string errorPagePath = server.getErrorPage(405);
+				std::cout << "ERROR PAGE PATH : " << errorPagePath << std::endl;
+				return ResponseFactory::methodNotAllowed_405().bodyFromFile(errorPagePath).autoHeaders();
+			}
 			return ResponseFactory::methodNotAllowed_405();
+		}
 
 		relativePath = server.getLocationValidIndex(request.uriPath);
 		if (request.method == "GET")
@@ -54,8 +70,7 @@ public:
 			if (!validIndex.empty())
 				return ResponseFactory::ok().bodyFromFile(validIndex).autoHeaders();
 
-			// std::string listPath = server.getLocationRoot(request.uriPath) + request.uriPath.substr(server.getLocationsConfigFromURI(request.uriPath)->path.length());
-			std::string listPath = server.getAbsolutePath(request.uriPath);
+			std::string listPath = server.getLocationAbsolutePath(request.uriPath);
 			return ResponseFactory::listDirectory(listPath, server.getRoot());
 		}
 		return ResponseFactory::forbidden_403();

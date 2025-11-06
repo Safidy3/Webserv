@@ -15,18 +15,6 @@ private:
 	std::vector<Client *>	_clients;
 	const MimeTypes*		_mimeTypes;
 
-
-	std::string getParentPath(const std::string& fullPath) const
-	{
-		size_t lastSlash = fullPath.find_last_of("/\\"); // Handles both '/' and '\'
-		if (lastSlash == std::string::npos)
-			return "";
-		std::string parentPath = fullPath.substr(0, lastSlash);
-		if (parentPath.empty())
-			return "/";
-		return parentPath;
-	}
-
 public:
 	Server(ServerConfig_t config, const MimeTypes* mimeTypes = NULL);
 	~Server();
@@ -49,13 +37,14 @@ public:
 	bool	isValidContentType(const std::string& contentType) const;
 	bool	isLocationAutoindexOn(const std::string& path) const;
 	bool	isUriValidFile(const std::string& uri) const;
+	bool	hasErrorPage(int code) const;
 
 	const std::string					getRoot() const { return _config.root; }
 	const LocationConfig_t*				getLocationsConfigFromURI(const std::string& path) const;
-	
-	const std::string					getAbsolutePath(const std::string& uri) const;
+
+	const std::string					getLocationAbsolutePath(const std::string& uri) const;
 	const std::string					getLocationRoot(const std::string& path) const;
-	const std::string*					getErrorPage(int code) const;
+	const std::string					getErrorPage(int code) const;
 	const std::vector<std::string>*		getIndexFiles() const { return &_config.index; };
 	const std::string					getLocationValidIndex(const std::string& locationPath) const;
 

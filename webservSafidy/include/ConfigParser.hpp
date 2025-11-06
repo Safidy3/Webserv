@@ -291,6 +291,7 @@ ServersConfig_t ConfigParser::parse(const std::string &filename)
 		parseHttp(config);
 	else
 		throw std::runtime_error("Expected 'http' directive at top level");
+	
 	return config;
 }
 

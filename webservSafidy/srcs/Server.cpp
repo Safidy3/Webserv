@@ -114,6 +114,11 @@ void	Server::removeClient(Client* client)
 
 /*=================================================================================================*/
 
+bool	Server::hasErrorPage(int code) const
+{
+	std::map<int, std::string>::const_iterator it = _config.error_pages.find(code);
+	return (it != _config.error_pages.end());
+}
 
 bool	Server::isValidLocation(const std::string& location) const
 {
@@ -228,17 +233,6 @@ const LocationConfig_t*	Server::getLocationsConfigFromURI(const std::string& uri
 	return NULL;
 }
 
-const std::string	Server::getLocationRoot(const std::string& uri) const
-{
-	std::string path = uri;
-	if (isUriValidFile(uri))
-		path = getParentPath(uri);
-	const LocationConfig_t* loc = getLocationsConfigFromURI(path);
-	if (loc)
-		return loc->root;
-	return "";
-}
-
 const std::string	Server::getLocationValidIndex(const std::string& locationPath) const
 {
 	if (isUriValidFile(locationPath))
@@ -262,7 +256,7 @@ const std::string	Server::getLocationValidIndex(const std::string& locationPath)
 	return "";
 }
 
-const std::string	Server::getAbsolutePath(const std::string& uri) const
+const std::string	Server::getLocationAbsolutePath(const std::string& uri) const
 {
 	// 1️⃣ Check if it matches any configured location
 	const LocationConfig_t* location = getLocationsConfigFromURI(uri);
@@ -274,16 +268,21 @@ const std::string	Server::getAbsolutePath(const std::string& uri) const
 	if (fullPath.size() > 1 && fullPath[fullPath.size() - 1] == '/')
 		fullPath.erase(fullPath.size() - 1);
 	fullPath += uri.substr(location->path.length());
-	std::cout << "\n *** PATH 2 : " << fullPath << std::endl;
 	return fullPath;
 }
 
-const std::string*	Server::getErrorPage(int code) const
+const std::string	Server::getErrorPage(int code) const
 {
 	std::map<int, std::string>::const_iterator it = _config.error_pages.find(code);
 	if (it != _config.error_pages.end())
-		return &it->second;
-	return NULL;
+	{
+		std::string errorPage = _config.root + it->second;
+		if (errorPage[0] == '/')
+			errorPage.erase(0, 1);
+		if (ftFileExists(errorPage))
+		return errorPage;
+	}
+	return "";
 }
 
 /*=================================================================================================*/
