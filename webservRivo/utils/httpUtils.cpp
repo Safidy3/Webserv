@@ -135,3 +135,28 @@ bool isCgiRequest(const HttpRequest &req, const LocationConfig &locationConf, st
     }
     return false;
 }
+
+std::string resolveFilePath(const HttpRequest &req, const ServerConfig &serverConf, const LocationConfig &locationConf)
+{
+    std::string root = !locationConf.root.empty() ? locationConf.root : serverConf.root;
+    std::string uri = req.uri;
+
+    // Retirer la partie du chemin correspondant à la location
+    std::string relativePath;
+    if (!locationConf.path.empty() && uri.find(locationConf.path) == 0)
+        relativePath = uri.substr(locationConf.path.size());
+    else
+        relativePath = uri;
+
+    // Nettoyer les / superflus
+    if (!relativePath.empty() && relativePath[0] == '/')
+        relativePath.erase(0, 1);
+
+    std::string filePath = root + "/" + relativePath;
+
+    // Supprimer les // doublons au cas où
+    while (filePath.find("//") != std::string::npos)
+        filePath.replace(filePath.find("//"), 2, "/");
+
+    return filePath;
+}

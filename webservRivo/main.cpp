@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:40:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/10/07 13:45:25 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/11/01 10:54:40 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,13 @@
 #include "../include/httpServer.hpp"
 
 #include <signal.h>
+
+volatile sig_atomic_t g_stop = 0;
+
+void handle_sigint(int)
+{
+    g_stop = 1;
+}
 
 int main(int argc, char **argv)
 {
@@ -32,20 +39,29 @@ int main(int argc, char **argv)
     
     try
     {
-        // Eviter que des EPIPE lors de send() fassent terminer le processus
+        // Ignorer SIGPIPE pour éviter les crash lors de send()
         signal(SIGPIPE, SIG_IGN);
-        ConfigParser parser(configPath, mimeTypesPath);
+        signal(SIGINT, handle_sigint);
 
+        ConfigParser parser(configPath, mimeTypesPath);
         HttpConfig config = parser.parse();
 
         MimeTypes types;
         parser.loadMimeTypes(types);
 
         Server server(config, types);
-        server.run();
+
+        while (!g_stop) {
+            server.run();
+        }
+
+        std::cout << "\nSIGINT reçu, nettoyage du serveur...\n";
+        server.cleanup();
     }
     catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
+
+    return EXIT_SUCCESS;
 }

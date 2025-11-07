@@ -3,15 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/10/20 10:08:25 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/11/01 11:01:26 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/httpServer.hpp"
 #include "../include/httpResponse.hpp"
+#include "../include/httpConfig.hpp"
 #include <limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -26,10 +27,12 @@ bool isPathInsideRoot(const std::string &root, const std::string &target, std::s
 bool checkClientMaxBodySize(size_t contentLength, size_t clientMaxBodySize);
 
 
-Server::Server(const HttpConfig &config, MimeTypes &types) : _config(config), _mimeTypes(types)
+Server::Server(const HttpConfig &config, MimeTypes &types)
+    : _config(config), _mimeTypes(types)
 {
     setupListeningSockets();
 }
+
 
 Server::~Server()
 {
@@ -302,7 +305,7 @@ void Server::handleClientData(size_t index)
 
         // enforce client_max_body_size if configured
         if (_clientToServer.count(client_fd) && _clientToServer[client_fd]) {
-            ServerConfig *sconf = _clientToServer[client_fd];
+            const ServerConfig *sconf = _clientToServer[client_fd];
             if (sconf->clientMaxBodySize > 0 && dechunked.size() > sconf->clientMaxBodySize) {
                 queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *sconf, NULL));
                 state.readBuffer.clear();
@@ -331,7 +334,7 @@ void Server::handleClientData(size_t index)
         return;
     }
     // 🔹 Récupérer la config du serveur associé
-    ServerConfig *serverConf = _clientToServer[client_fd];
+    const ServerConfig *serverConf = _clientToServer[client_fd];
     if (!serverConf) {
         std::cerr << "Error: no server config found for client " << client_fd << "\n";
         return;
@@ -547,13 +550,15 @@ void Server::run()
     }
 }
 
+
 void Server::queueResponse(int client_fd, const std::string &response)
 {
-    if (client_fd < 0) return;
-    _sendBuffers[client_fd] += response;
-    _closeAfterSend[client_fd] = true; // default: close after response
+    if (client_fd < 0)
+        return;
 
-    // find pollfd for client and enable POLLOUT
+    _sendBuffers[client_fd] = response;
+    _closeAfterSend[client_fd] = true; 
+
     for (size_t i = 0; i < _fds.size(); ++i) {
         if (_fds[i].fd == client_fd) {
             _fds[i].events |= POLLOUT;
@@ -614,4 +619,25 @@ void Server::closeClient(size_t index)
     // remove the pollfd entry
     _fds.erase(_fds.begin() + index);
 }
+
+void Server::cleanup()
+{
+    std::cout << "Closing all client connections...\n";
+    
+    while (!_clientSockets.empty())
+    {
+        closeClient(0);
+    }
+
+    std::cout << "Closing listening sockets...\n";
+    // Fermer les sockets d'écoute
+    for (size_t i = 0; i < _fds.size(); ++i)
+        ::close(_fds[i].fd);
+    _fds.clear();
+    _listenSockets.clear();
+
+    std::cout << "Server cleanup done.\n";
+}
+
+
 

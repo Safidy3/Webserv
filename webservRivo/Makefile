@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: safandri <safandri@student.42antananari    +#+  +:+       +#+         #
+#    By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/08/28 14:08:13 by rhanitra          #+#    #+#              #
-#    Updated: 2025/10/23 07:09:52 by safandri         ###   ########.fr        #
+#    Updated: 2025/09/24 16:36:28 by rivoinfo         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -64,18 +64,5 @@ fclean: clean
 
 re: fclean all
 
-run: all
-	@clear
-	@./$(NAME)
-
-runre: re
-	@./$(NAME)
-
-debug: all
-	@valgrind --track-origins=yes --leak-check=full ./$(NAME)
-
-# debug: all
-# 	@valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME)
-
-.PHONY: all clean fclean re run runre
+.PHONY: all clean fclean re
 

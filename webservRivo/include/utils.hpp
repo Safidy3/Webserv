@@ -6,21 +6,21 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/29 16:22:27 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/10/20 10:10:55 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/10/21 16:09:20 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-// #include "httpRequest.hpp"
 #include "httpConfig.hpp"
+#include "httpRequest.hpp"
+#include "httpServer.hpp"
 
-#include "httpRequest.hpp"   // nécessaire car tu passes HttpRequest par référence
-
-// ✅ Forward declaration pour éviter d'inclure httpConfig.hpp ici
+class ServerConfig;
 class LocationConfig;
 class HttpRequest;
+
 
 #include <stdexcept>
 #include <string>
@@ -31,7 +31,9 @@ class HttpRequest;
 #include <cstring>
 #include <map>
 
-
+class HttpRequest;
+class ServerConfig;
+class LocationConfig;
 
 template <typename T>
 std::string ftToString(T value)
@@ -60,5 +62,6 @@ bool checkClientMaxBodySize(size_t contentLength, size_t clientMaxBodySize);
 std::string dechunkBody(const std::string &chunkedBody);
 
 bool isCgiRequest(const HttpRequest &req, const LocationConfig &locationConf, std::string &cgiPath);
+std::string resolveFilePath(const HttpRequest &req, const ServerConfig &serverConf, const LocationConfig &locationConf);
 
 #endif
