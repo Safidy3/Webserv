@@ -1,3 +1,5 @@
+! servername directive ao @ conf
+
 CGI leaks if error :
   location /cgi_bin {
       root ./clients/www1/cgi_bin;
