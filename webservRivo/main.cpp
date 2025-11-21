@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:40:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/01 10:54:40 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/11/20 19:52:44 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,17 +26,18 @@ void handle_sigint(int)
 int main(int argc, char **argv)
 {
     std::string configPath;
-    std::string mimeTypesPath = "./conf.d/mime.type";
+    std::string mimeTypesPath = "./conf/mime.type";
 
     if (argc == 2 && argv[1][0])
         configPath = argv[1];  
     else if (argc == 1)
-        configPath = "./conf.d/webserv.conf";
-    else {
+        configPath = "./conf/webserv.conf";
+    else
+    {
         std::cerr << "Use: " << argv[0] << " [config_file]" << std::endl;
         return EXIT_FAILURE;
     }
-    
+
     try
     {
         // Ignorer SIGPIPE pour éviter les crash lors de send()
@@ -58,7 +59,8 @@ int main(int argc, char **argv)
         std::cout << "\nSIGINT reçu, nettoyage du serveur...\n";
         server.cleanup();
     }
-    catch (const std::exception& e) {
+    catch (const std::exception& e)
+    {
         std::cerr << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
