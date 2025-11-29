@@ -1,0 +1,34 @@
+! asina servername directive ao @ conf ex: localhost:8080 -> www.werver.com
+
+CGI leaks if error :
+  location /cgi_bin {
+      root ./clients/www1/cgi_bin;
+      cgi_extension .php;
+      cgi_path /usr/bin/php-cgi;
+  }
+
+response builder "write()" : checking only -1 or 0 values is not enough, both should be checked
+
+! fonction flock() tsy azo ampiasaina
+
+! errno : If errno is checked after read/recv/write/send, the grade is 0 and the evaluation process ends now.
+  handlCGI.cpp     write()
+  appendToCSV.cpp  write()
+
+index : otrn misy ts mety
+
+! autoindex otrn ts mande
+
+! error page tsy mande
+
+######### status code ###########
+
+DELETE request 403 fona @ site static
+
+!! bad request m_crash/miretourne 405 fa tokony 400
+
+!! Image, ts mande, tsy afaka testeba ny 413 payload too large
+
+500, 501, 403, 201, 204, 301/302 tsy votest
+
+
