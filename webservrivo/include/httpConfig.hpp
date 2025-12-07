@@ -39,11 +39,13 @@ struct LocationConfig
     std::string returnPath;
     std::string cgiExtension;
     std::string cgiPath;
+    // per-location CGI timeout in seconds. 0 means use server default (10s here)
+    int cgiTimeoutSeconds;
     std::string uploadDir;
     std::string defaultFile;
     std::map<std::string,std::string> directives;
 
-    LocationConfig() : autoindex(false), returnCode(0) {}
+    LocationConfig() : autoindex(false), returnCode(0), cgiTimeoutSeconds(0) {}
 };
 
 struct ServerConfig

@@ -104,7 +104,7 @@
       </div>
 
       <div class="d-flex gap-2 mt-3">
-        <button type="submit" class="btn btn-primary">Nyavo</button>
+        <button type="submit" class="btn btn-primary">Post information</button>
         <button type="reset" class="btn btn-secondary">Cancel</button>
       </div>
 

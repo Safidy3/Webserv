@@ -1,0 +1,12 @@
+Listening on 127.0.0.1:8080
+Listening on 127.0.0.1:8081
+New client 5 connected (server selection pending Host: header)
+Client 5 assigned to server 'localhost' on port 8080
+New client 5 connected (server selection pending Host: header)
+Client 5 assigned to server 'localhost' on port 8080
+CGI stderr: PHP Parse error:  Unclosed '{' on line 3 in /home/hrv/Documents/DEV/servweb/webserv/clients/www1/cgi_bin/error.php on line 6
+
+CGI execution error: handleCGI: child produced stderr
+New client 5 connected (server selection pending Host: header)
+Client 5 assigned to server 'localhost' on port 8080
+CGI execution error: handleCGI: child exited with code 1

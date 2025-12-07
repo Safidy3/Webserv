@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:40:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/01 10:54:40 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/07 15:12:48 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
             server.run();
         }
 
-        std::cout << "\nSIGINT reçu, nettoyage du serveur...\n";
+        std::cout << "\nSIGINT received, server cleanup...\n";
         server.cleanup();
     }
     catch (const std::exception& e) {

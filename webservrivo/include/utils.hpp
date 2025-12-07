@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/29 16:22:27 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/25 17:38:56 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/07 14:14:57 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ std::string ftToString(T value)
 
 int ftToInt(const std::string &s);
 std::string ftStrdup(const char* s);
+bool file_exists(const std::string &path);
 std::string ftReadFile(const std::string &path);
 std::vector<std::string> ftSplitStr(const std::string& str, const std::string& delimiter);
 std::vector<std::string> splitParts(const std::string &body, const std::string &delimiter);

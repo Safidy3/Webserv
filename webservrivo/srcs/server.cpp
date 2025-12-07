@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/26 15:46:11 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/07 15:07:23 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -463,47 +463,59 @@ void Server::handleClientData(size_t index)
         std::string contentType = req.headers["Content-Type"];
         if (contentType.find("multipart/form-data") != std::string::npos) {
 
-            // ✅ Déterminer le répertoire d'upload : uploadDir (location) -> uploadDir (server) -> root
-            std::string uploadDir;
+            // Déterminer la racine d'upload
+            std::string uploadRoot;
             if (locationConf && !locationConf->uploadDir.empty())
-                uploadDir = locationConf->uploadDir;
+                uploadRoot = locationConf->uploadDir;
             else if (locationConf && !locationConf->root.empty())
-                uploadDir = locationConf->root;
+                uploadRoot = locationConf->root;
             else
-                uploadDir = serverConf->root;  // fallback
+                uploadRoot = serverConf->root;
 
-            // Ensure uploadDir exists (mkdir -p semantics)
-            if (!uploadDir.empty()) {
-                struct stat st;
-                if (stat(uploadDir.c_str(), &st) == -1) {
-                    std::string accum;
-                    size_t pos = 0;
-                    // If path starts with '/', keep leading '/'
-                    if (uploadDir.size() > 0 && uploadDir[0] == '/') {
-                        accum = "/";
-                        pos = 1;
-                    }
-                    while (pos <= uploadDir.size()) {
-                        size_t next = uploadDir.find('/', pos);
-                        if (next == std::string::npos) next = uploadDir.size();
-                        std::string part = uploadDir.substr(pos, next - pos);
-                        if (!part.empty()) {
-                            if (accum.size() > 1 && accum[accum.size()-1] != '/') accum += "/";
-                            accum += part;
-                            if (stat(accum.c_str(), &st) == -1) {
-                                if (mkdir(accum.c_str(), 0755) == -1 && errno != EEXIST) {
-                                    std::cerr << "Failed to create upload dir: " << accum << " errno=" << errno << "\n";
-                                    break;
-                                }
+            // Ajouter "/uploads" pour tous les cas
+            std::string uploadDir = uploadRoot;
+            if (uploadDir[uploadDir.size() - 1] != '/')
+                uploadDir += "/";
+            uploadDir += "uploads";
+
+            // Créer le dossier /uploads si nécessaire
+            struct stat st;
+            if (stat(uploadDir.c_str(), &st) == -1) {
+                std::string accum;
+                size_t pos = 0;
+                if (uploadDir.size() > 0 && uploadDir[0] == '/') {
+                    accum = "/";
+                    pos = 1;
+                }
+                while (pos <= uploadDir.size()) {
+                    size_t next = uploadDir.find('/', pos);
+                    if (next == std::string::npos) next = uploadDir.size();
+                    std::string part = uploadDir.substr(pos, next - pos);
+                    if (!part.empty()) {
+                        if (accum.size() > 1 && accum[accum.size() - 1] != '/') accum += "/";
+                        accum += part;
+                        if (stat(accum.c_str(), &st) == -1) {
+                            if (mkdir(accum.c_str(), 0755) == -1 && errno != EEXIST) {
+                                std::cerr << "Failed to create upload dir: " << accum << " errno=" << errno << "\n";
+                                break;
                             }
                         }
-                        pos = next + 1;
                     }
+                    pos = next + 1;
                 }
             }
 
-            // ✅ Appeler le handler multipart
+            // Appeler le handler multipart avec le bon chemin
             handleMultipartUpload(req, state.readBuffer, uploadDir, client_fd);
+
+            // Ensuite, envoyer une redirection HTTP 303
+            std::ostringstream response;
+            response << "HTTP/1.1 303 See Other\r\n";
+            response << "Location: /uploads\r\n"; // ou /uploads/success.html si tu préfères
+            response << "Content-Length: 0\r\n";
+            response << "Connection: close\r\n\r\n";
+
+            send(client_fd, response.str().c_str(), response.str().size(), 0);
             return;
         }
     }
