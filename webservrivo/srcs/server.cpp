@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/09 16:00:12 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/09 18:10:57 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -231,7 +231,7 @@ void Server::handleClientData(size_t index)
     int client_fd = _fds[index].fd;
     char buffer[BUFFER_SIZE];
 
-    // Read once (poll indicated readability). Append to per-client buffer.
+    //* Read once (poll indicated readability). Append to per-client buffer.
     ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
 
     if (received == 0) {
