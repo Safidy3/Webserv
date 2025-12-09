@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   httpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/07 13:54:09 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/09 15:17:51 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,10 @@ class HttpResponseBuilder
 
 
         std::string getMimeType(const std::string &path);
+
+        static std::string parseCGIStatusFromHeaders(const std::string &headers);
+        static std::string generateAutoindexHTML(const std::string &dirPath, const std::string &uri);
+        
         std::string buildResponse(const HttpRequest &req, const ServerConfig &serverConf, const LocationConfig &locationConf);
 };
 

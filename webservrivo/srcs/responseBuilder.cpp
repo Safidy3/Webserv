@@ -3,23 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/07 14:16:45 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/09 15:18:47 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/httpResponse.hpp"
+#include "../include/utils.hpp"
+#include "../include/handleErrors.hpp"
 #include <sys/stat.h>
 #include <dirent.h>
 #include <limits.h>
-#include "../include/utils.hpp"
-#include "../include/handleErrors.hpp"
-
-// Forward declarations for utils functions (ensures visibility)
-std::string parseCGIStatusFromHeaders(const std::string &headers);
-std::string generateAutoindexHTML(const std::string &dirPath, const std::string &uri);
 
 HttpResponseBuilder::HttpResponseBuilder(const MimeTypes &types)
         : _mimeTypes(types) {}
@@ -40,6 +36,40 @@ std::string HttpResponseBuilder::getMimeType(const std::string &path)
         return it->second;
 
     return "application/octet-stream";
+}
+
+std::string HttpResponseBuilder::parseCGIStatusFromHeaders(const std::string &headers)
+{
+    std::istringstream hh(headers);
+    std::string line;
+    while (std::getline(hh, line)) {
+        if (!line.empty() && line[line.size()-1] == '\r') line.erase(line.size()-1);
+        if (line.size() >= 7 && line.substr(0,7) == "Status:") {
+            std::string status = line.substr(7);
+            size_t s = status.find_first_not_of(" \t");
+            if (s != std::string::npos) status = status.substr(s);
+            return std::string("HTTP/1.1 ") + status + "\r\n";
+        }
+    }
+    return std::string();
+}
+
+std::string HttpResponseBuilder::generateAutoindexHTML(const std::string &dirPath, const std::string &uri)
+{
+    DIR *dir = opendir(dirPath.c_str());
+    if (!dir) return std::string();
+    std::ostringstream oss;
+    oss << "<html><head><title>Index of " << uri << "</title></head><body>";
+    oss << "<h1>Index of " << uri << "</h1><ul>";
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        std::string name(entry->d_name);
+        if (name == "." || name == "..") continue;
+        oss << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+    }
+    oss << "</ul></body></html>";
+    closedir(dir);
+    return oss.str();
 }
 
 std::string HttpResponseBuilder::buildResponse(

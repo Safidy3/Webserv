@@ -43,40 +43,6 @@ bool isPathInsideRoot(const std::string &root, const std::string &target, std::s
     return outCanonicalTarget.find(canonRoot) == 0;
 }
 
-std::string generateAutoindexHTML(const std::string &dirPath, const std::string &uri)
-{
-    DIR *dir = opendir(dirPath.c_str());
-    if (!dir) return std::string();
-    std::ostringstream oss;
-    oss << "<html><head><title>Index of " << uri << "</title></head><body>";
-    oss << "<h1>Index of " << uri << "</h1><ul>";
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        std::string name(entry->d_name);
-        if (name == "." || name == "..") continue;
-        oss << "<li><a href=\"" << name << "\">" << name << "</a></li>";
-    }
-    oss << "</ul></body></html>";
-    closedir(dir);
-    return oss.str();
-}
-
-std::string parseCGIStatusFromHeaders(const std::string &headers)
-{
-    std::istringstream hh(headers);
-    std::string line;
-    while (std::getline(hh, line)) {
-        if (!line.empty() && line[line.size()-1] == '\r') line.erase(line.size()-1);
-        if (line.size() >= 7 && line.substr(0,7) == "Status:") {
-            std::string status = line.substr(7);
-            size_t s = status.find_first_not_of(" \t");
-            if (s != std::string::npos) status = status.substr(s);
-            return std::string("HTTP/1.1 ") + status + "\r\n";
-        }
-    }
-    return std::string();
-}
-
 bool checkClientMaxBodySize(size_t contentLength, size_t clientMaxBodySize)
 {
     if (clientMaxBodySize == 0) return false;
