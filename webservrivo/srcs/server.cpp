@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/10 17:12:22 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/10 19:47:54 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -165,7 +165,7 @@ void Server::handleMultipartUpload(const HttpRequest &req, const std::string &ra
         std::string name = extractFieldName(parts[i]);
         std::string filename = extractFilename(parts[i]);
         std::string data = extractFileContent(parts[i]);
-
+      
         if (!filename.empty()) {
             saveUploadedFile(uploadDir, filename, data);
             uploadedFilename = filename;
@@ -349,62 +349,82 @@ void Server::handleClientData(size_t index)
         if (teLine.find("chunked") != std::string::npos) isChunked = true;
     }
 
-    // Try to extract Content-Length if present
-    size_t contentLenPos = state.readBuffer.find("Content-Length:");
+    // Assurez-vous que locationConf est défini avant
+    const LocationConfig* locationConf = NULL;
+    size_t bestMatchLen = 0;
+    // boucle pour trouver la meilleure location ...
+    if (!locationConf && !serverConf->locations.empty())
+        locationConf = &serverConf->locations[0];
+
+        // Assurez-vous que serverConf est défini
+    // Déterminer maxBody à partir de serverConf et locationConf
+    size_t maxBody = serverConf->clientMaxBodySize;
+    if (locationConf && locationConf->clientMaxBodySize > 0)
+        maxBody = locationConf->clientMaxBodySize;
+
+    // Extraction Content-Length si présente
     size_t contentLength = 0;
+    size_t contentLenPos = state.readBuffer.find("Content-Length:");
     if (contentLenPos != std::string::npos) {
         size_t lineEnd = state.readBuffer.find("\r\n", contentLenPos);
         if (lineEnd == std::string::npos) lineEnd = hdrEnd;
         size_t valStart = contentLenPos + strlen("Content-Length:");
         std::string val = state.readBuffer.substr(valStart, lineEnd - valStart);
-        size_t first = val.find_first_not_of(" \t");
-        size_t last = val.find_last_not_of(" \t");
-        if (first != std::string::npos && last != std::string::npos)
-            val = val.substr(first, last - first + 1);
-        else
-            val = "0";
+        val.erase(0, val.find_first_not_of(" \t"));
+        val.erase(val.find_last_not_of(" \t") + 1);
         contentLength = static_cast<size_t>(atoi(val.c_str()));
+
+        // ✅ Refuser immédiatement si Content-Length dépasse maxBody
+        if (maxBody > 0 && contentLength > maxBody) {
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
+            closeClient(index); // coupe proprement la connexion
+            return;
+        }
     }
 
+    // -------------------
+    // Attendre la réception complète
+    // -------------------
     size_t bodyLen = state.readBuffer.size() - (hdrEnd + 4);
-    if (contentLenPos != std::string::npos && bodyLen < contentLength) {
-        // wait for rest of body
+    if (!isChunked && contentLenPos != std::string::npos && bodyLen < contentLength) {
+        // Corps pas encore complet → attendre
         return;
     }
 
+    // -------------------
+    // Vérification pour body complet
+    // -------------------
+    if (!isChunked && maxBody > 0 && bodyLen > maxBody) {
+        queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
+        closeClient(index);
+        return;
+    }
+
+    // -------------------
+    // Vérification pour chunked
+    // -------------------
     if (isChunked) {
-        // Quick heuristic: check for terminating chunk '0\r\n' after body
-        size_t zeroChunkPos = state.readBuffer.find("\r\n0\r\n", hdrEnd + 4);
-        if (zeroChunkPos == std::string::npos) {
-            // body not complete yet
-            return;
-        }
-        // Extract chunked body substring
         std::string chunkedBody = state.readBuffer.substr(hdrEnd + 4);
         std::string dechunked = dechunkBody(chunkedBody);
+
         if (dechunked.empty() && !chunkedBody.empty()) {
-            // dechunk failed -> bad request
-            if (_clientToServer.count(client_fd) && _clientToServer[client_fd])
-                queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *_clientToServer[client_fd], NULL));
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, locationConf));
             state.readBuffer.clear();
             return;
         }
 
-        // enforce client_max_body_size if configured
-        if (_clientToServer.count(client_fd) && _clientToServer[client_fd]) {
-            const ServerConfig *sconf = _clientToServer[client_fd];
-            if (sconf->clientMaxBodySize > 0 && dechunked.size() > sconf->clientMaxBodySize) {
-                queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *sconf, NULL));
-                state.readBuffer.clear();
-                return;
-            }
+        if (maxBody > 0 && dechunked.size() > maxBody) {
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
+            closeClient(index);
+            return;
         }
 
-        // Replace buffer with headers + dechunked body for parser
+        // Remplacer buffer avec headers + dechunked body
         std::string headers = state.readBuffer.substr(0, hdrEnd + 4);
         state.readBuffer = headers + dechunked;
         bodyLen = dechunked.size();
     }
+
 
     // We have enough to parse a full request
     HttpRequestParser parser;
@@ -421,9 +441,6 @@ void Server::handleClientData(size_t index)
         return;
     }
 
-    // 🔹 Trouver la meilleure location
-    const LocationConfig* locationConf = NULL;
-    size_t bestMatchLen = 0;
     std::string uri = req.uri;
 
     for (size_t i = 0; i < serverConf->locations.size(); ++i) {

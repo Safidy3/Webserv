@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 13:30:58 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/25 18:57:48 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/10 18:35:43 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,8 @@ struct LocationConfig
     std::string uploadDir;
     std::string defaultFile;
     std::map<std::string,std::string> directives;
+
+    size_t clientMaxBodySize;
 
     LocationConfig() : autoindex(false), returnCode(0), cgiTimeoutSeconds(0) {}
 };
