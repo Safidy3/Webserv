@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/09 18:10:57 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/10 17:12:22 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -424,11 +424,36 @@ void Server::handleClientData(size_t index)
     // 🔹 Trouver la meilleure location
     const LocationConfig* locationConf = NULL;
     size_t bestMatchLen = 0;
+    std::string uri = req.uri;
+
     for (size_t i = 0; i < serverConf->locations.size(); ++i) {
         const LocationConfig &loc = serverConf->locations[i];
-        if (req.uri.find(loc.path) == 0 && loc.path.size() > bestMatchLen) {
-            locationConf = &loc;
-            bestMatchLen = loc.path.size();
+        const std::string &locPath = loc.path;
+
+        bool matches = false;
+
+        if (locPath == "/") {
+            // la location racine est candidate pour tout
+            matches = true;
+        } else {
+            // cas 1 : URI exactement égal à la location (ex: "/test" == "/test")
+            if (uri == locPath) {
+                matches = true;
+            } else {
+                // cas 2 : URI commence par "locPath/" (ex: "/test/..." matches "/test")
+                std::string locWithSlash = locPath;
+                if (locWithSlash.size() == 0 || locWithSlash[locWithSlash.size() - 1] != '/')
+                    locWithSlash += "/";
+                if (uri.find(locWithSlash) == 0)
+                    matches = true;
+            }
+        }
+
+        if (matches) {
+            if (locPath.size() > bestMatchLen) {
+                locationConf = &loc;
+                bestMatchLen = locPath.size();
+            }
         }
     }
 
@@ -524,62 +549,87 @@ void Server::handleClientData(size_t index)
         }
     }
 
-    // DELETE handler
-    if (req.method == "DELETE") {
-        // Calculer le répertoire root
-        std::string root = (locationConf && !locationConf->root.empty()) ? locationConf->root : serverConf->root;
+    if (req.method == "DELETE")
+    {
+        std::string root = (locationConf && !locationConf->root.empty())
+                            ? locationConf->root
+                            : serverConf->root;
 
-        // Calculer path brut relatif à la location
         std::string rawRel;
-        if (locationConf && !locationConf->path.empty() && req.uri.find(locationConf->path) == 0)
+        if (locationConf && !locationConf->path.empty()
+            && req.uri.find(locationConf->path) == 0)
+        {
             rawRel = req.uri.substr(locationConf->path.size());
+        }
         else if (!req.uri.empty() && req.uri[0] == '/')
             rawRel = req.uri.substr(1);
         else
             rawRel = req.uri;
 
         if (rawRel.empty()) {
-            queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
+            queueResponse(client_fd,
+                HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
             return;
         }
 
         std::string normRel = normalizeRelativePath(rawRel);
-        std::string targetPath = root + normRel;
+
+        std::string targetPath = root;
+
+        if (locationConf && !locationConf->path.empty()
+            && locationConf->path != "/")
+        {
+            std::string locp = locationConf->path;
+            if (locp[0] == '/') locp.erase(0,1);
+            targetPath += "/" + locp;
+        }
+
+        if (!normRel.empty()) {
+            if (normRel[0] != '/')
+                targetPath += "/" + normRel;
+            else
+                targetPath += normRel;
+        }
 
         std::string canonTarget;
-            if (!isPathInsideRoot(root, targetPath, canonTarget)) {
-                queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
-                return;
-            }
-
-        struct stat st;
-        if (stat(canonTarget.c_str(), &st) == -1) {
-            queueResponse(client_fd, HandleErrors::generateErrorResponse(404, *serverConf, locationConf));
+        if (!isPathInsideRoot(root, targetPath, canonTarget)) {
+            queueResponse(client_fd,
+                HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
             return;
         }
+        
+        struct stat st;
+        if (stat(canonTarget.c_str(), &st) == -1) {
+            queueResponse(client_fd,
+                HandleErrors::generateErrorResponse(404, *serverConf, locationConf));
+            return;
+        }
+
         if (S_ISDIR(st.st_mode)) {
-            // refuse delete of directory for now
-            queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
+            queueResponse(client_fd,
+                HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
             return;
         }
 
         if (unlink(canonTarget.c_str()) == -1) {
-            queueResponse(client_fd, HandleErrors::generateErrorResponse(500, *serverConf, locationConf));
+            queueResponse(client_fd,
+                HandleErrors::generateErrorResponse(500, *serverConf, locationConf));
             return;
         }
-        std::string resp = "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
-        queueResponse(client_fd, resp);
-        return;
+
+        std::string resp =
+            "HTTP/1.1 204 No Content\r\n"
+            "Content-Length: 0\r\n"
+                "Connection: close\r\n\r\n";
+
+            queueResponse(client_fd, resp);
+            return;
     }
 
-
-
-    // 🔹 Construire et envoyer la réponse HTTP
     HttpResponseBuilder builder(_mimeTypes);
     std::string response;
     try {
-        response = builder.buildResponse(req, *serverConf, 
-                                         locationConf ? *locationConf : LocationConfig());
+        response = builder.buildResponse(req, *serverConf, locationConf ? *locationConf : LocationConfig());
     } catch (std::exception &e) {
         response = HandleErrors::generateErrorResponse(500, *serverConf, locationConf);
     }

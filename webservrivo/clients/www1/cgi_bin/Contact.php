@@ -59,21 +59,6 @@
         </div>
       </div>
 
-      <div class="row mb-3">
-        <div class="col-sm-6">
-          <label for="inputBirthDay" class="form-label">BirthDay</label>
-          <input type="date" class="form-control" name="BirthDay" id="inputBirthDay">
-        </div>
-        <div class="col-sm-6">
-          <label for="inputStatus" class="form-label">Family Status</label>
-          <select class="form-select" name="status" id="inputStatus">
-            <option value="s">Single</option>
-            <option value="m">Married</option>
-            <option value="d">Divorced</option>
-          </select>
-        </div>
-      </div>
-
       <h5 class="mt-4 mb-3">Contact</h5>
       <div class="row mb-3">
         <div class="col-sm-6">
