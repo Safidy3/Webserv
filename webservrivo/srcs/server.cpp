@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/11 16:09:34 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/11 17:51:46 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -193,7 +193,7 @@ void Server::saveUploadedFile(const std::string &uploadDir,
                       const std::string &fileContent)
 {
     std::string fullPath = uploadDir + "/" + filename;
-    // Ensure directory exists (create parent directories as needed)
+
     size_t slash = fullPath.find_last_of('/');
     if (slash != std::string::npos) {
         std::string dir = fullPath.substr(0, slash);
@@ -234,7 +234,6 @@ void Server::handleClientData(size_t index)
    int client_fd = _fds[index].fd;
     char buffer[BUFFER_SIZE];
 
-    // Lire depuis le socket
     ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
     if (received <= 0) {
         if (received < 0) closeClient(index);
@@ -245,7 +244,7 @@ void Server::handleClientData(size_t index)
     state.readBuffer.append(buffer, received);
     state.lastActivity = time(NULL);
 
-    // ---- CONTRÔLE IMMÉDIAT DU BODY (avant parsing) ----
+    //* BODY CHECKING BEFORE PARSING
     size_t hdrEnd = state.readBuffer.find("\r\n\r\n");
     if (hdrEnd != std::string::npos) {
         size_t bodyStart = hdrEnd + 4;
@@ -259,15 +258,14 @@ void Server::handleClientData(size_t index)
 
         if (maxBody > 0 && state.receivedBody > maxBody) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
-            // closeClient(index);
             return;
         }
     }
-    // ---- FIN CONTRÔLE IMMÉDIAT ----
 
-    // Vérifier si serveur assigné
+    //* Check if assigned server
     if (!_clientToServer[client_fd]) {
-        if (_clientToListenSocket.count(client_fd) == 0) return;
+        if (_clientToListenSocket.count(client_fd) == 0)
+            return;
 
         int listen_fd = _clientToListenSocket[client_fd];
         const std::vector<const ServerConfig*> &candidates = _listenSockets[listen_fd];
@@ -276,8 +274,7 @@ void Server::handleClientData(size_t index)
         size_t hostPos = state.readBuffer.find("Host:");
         if (hostPos != std::string::npos) {
             size_t hostStart = hostPos + 5;
-            while (hostStart < state.readBuffer.size() &&
-                   (state.readBuffer[hostStart] == ' ' || state.readBuffer[hostStart] == '\t'))
+            while (hostStart < state.readBuffer.size() && (state.readBuffer[hostStart] == ' ' || state.readBuffer[hostStart] == '\t'))
                 hostStart++;
             size_t hostEnd = state.readBuffer.find("\r\n", hostStart);
             if (hostEnd != std::string::npos) {

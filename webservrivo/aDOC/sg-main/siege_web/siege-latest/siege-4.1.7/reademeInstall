@@ -1,0 +1,2 @@
+./configure --prefix=/home/sandriam/Documents/42/work/webserv/siege-latest/siege-4.1.7/siege-install 
+// for create prefix dir siege of bin after tape make make install after you can launch siege on bin

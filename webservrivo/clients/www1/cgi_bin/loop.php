@@ -6,10 +6,6 @@
     $start = time();
     while (true) {
         sleep(1);
-        echo "tick\n";
-        flush();
-        if (time() - $start > 4)
-            break;
     }
     echo "Done\n";
     
