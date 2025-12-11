@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/11 11:43:11 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/11 16:09:34 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -231,75 +231,63 @@ void Server::saveUploadedFile(const std::string &uploadDir,
 
 void Server::handleClientData(size_t index)
 {
-    int client_fd = _fds[index].fd;
+   int client_fd = _fds[index].fd;
     char buffer[BUFFER_SIZE];
 
-    //* Read once (poll indicated readability). Append to per-client buffer.
+    // Lire depuis le socket
     ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
-
-    if (received == 0) {
+    if (received <= 0) {
+        if (received < 0) closeClient(index);
         return;
     }
-
-    if (received < 0) {
-        closeClient(index);
-        return;
-    }
-
-    // Update activity timestamp on successful read
-    if (_clients.find(client_fd) != _clients.end())
-        _clients[client_fd].lastActivity = time(NULL);
 
     ClientState &state = _clients[client_fd];
     state.readBuffer.append(buffer, received);
+    state.lastActivity = time(NULL);
 
-    // small safeguard
-    if (state.readBuffer.size() > 20 * 1024 * 1024) { // 20MB limit
-        queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
-        return;
-    }
-
-    // Do we have end of headers?
+    // ---- CONTRÔLE IMMÉDIAT DU BODY (avant parsing) ----
     size_t hdrEnd = state.readBuffer.find("\r\n\r\n");
-    if (hdrEnd == std::string::npos) {
-        // need more data
-        return;
-    }
+    if (hdrEnd != std::string::npos) {
+        size_t bodyStart = hdrEnd + 4;
+        size_t bodyBytes = (state.readBuffer.size() > bodyStart)
+                           ? state.readBuffer.size() - bodyStart
+                           : 0;
+        state.receivedBody = bodyBytes;
 
-    // 🔹 SI le serveur n'est pas encore choisi, le choisir maintenant selon le Host: header
-    // Mais d'abord, faire un parsing préliminaire des headers pour extraire le Host
-    if (!_clientToServer[client_fd]) {
-        if (_clientToListenSocket.count(client_fd) == 0) {
-            std::cerr << "Error: client " << client_fd << " has no listen socket mapping\n";
+        const ServerConfig* serverConfTmp = _clientToServer[client_fd];
+        size_t maxBody = serverConfTmp ? serverConfTmp->clientMaxBodySize : 0;
+
+        if (maxBody > 0 && state.receivedBody > maxBody) {
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
+            // closeClient(index);
             return;
         }
-        
+    }
+    // ---- FIN CONTRÔLE IMMÉDIAT ----
+
+    // Vérifier si serveur assigné
+    if (!_clientToServer[client_fd]) {
+        if (_clientToListenSocket.count(client_fd) == 0) return;
+
         int listen_fd = _clientToListenSocket[client_fd];
         const std::vector<const ServerConfig*> &candidates = _listenSockets[listen_fd];
-        
-        if (candidates.empty()) {
-            std::cerr << "Error: no server available on listen socket " << listen_fd << "\n";
-            return;
-        }
-        
-        // Extraire le Host header pour le matching
+
         std::string requestHost;
         size_t hostPos = state.readBuffer.find("Host:");
         if (hostPos != std::string::npos) {
             size_t hostStart = hostPos + 5;
-            while (hostStart < state.readBuffer.size() && (state.readBuffer[hostStart] == ' ' || state.readBuffer[hostStart] == '\t'))
+            while (hostStart < state.readBuffer.size() &&
+                   (state.readBuffer[hostStart] == ' ' || state.readBuffer[hostStart] == '\t'))
                 hostStart++;
             size_t hostEnd = state.readBuffer.find("\r\n", hostStart);
             if (hostEnd != std::string::npos) {
                 requestHost = state.readBuffer.substr(hostStart, hostEnd - hostStart);
-                // Extraire juste le hostname (supprimer port si présent)
                 size_t colonPos = requestHost.find(':');
                 if (colonPos != std::string::npos)
                     requestHost = requestHost.substr(0, colonPos);
             }
         }
-        
-        // Chercher un serveur avec un matching server_name
+
         const ServerConfig* selectedServer = NULL;
         std::string matchedName;
         for (size_t i = 0; i < candidates.size(); ++i) {
@@ -313,37 +301,35 @@ void Server::handleClientData(size_t index)
             }
             if (selectedServer) break;
         }
-        
-        // Si aucun match → premier serveur de la liste (default)
-        if (!selectedServer && !candidates.empty()) {
+
+        if (!selectedServer && !candidates.empty())
             selectedServer = candidates[0];
-            if (matchedName.empty()) matchedName = "(default)";
-            if (!requestHost.empty()) {
-                std::cout << "No matching server_name for '" << requestHost 
-                          << "', using default server (port " 
-                          << selectedServer->listenPort << ")\n";
-            }
-        }
-        
-        if (!selectedServer) {
-            std::cerr << "Error: no server available on listen socket " << listen_fd << "\n";
-            return;
-        }
-        
+
+        if (!selectedServer) return;
+
         _clientToServer[client_fd] = selectedServer;
-        std::cout << "Client " << client_fd << " assigned to server '" << matchedName
-              << "' on port " << selectedServer->listenPort << "\n";
     }
 
-    // Maintenant qu'on a un serveur assigné, on peut parser la requête
-    // et envoyer des erreurs appropriées si nécessaire
     const ServerConfig *serverConf = _clientToServer[client_fd];
-    if (!serverConf) {
-        std::cerr << "Error: no server config found for client " << client_fd << "\n";
-        return;
+    if (!serverConf) return;
+
+    // Vérifier si le body complet est reçu (Content-Length ou chunked)
+    size_t contentLen = 0;
+    size_t contentLenPos = state.readBuffer.find("Content-Length:");
+    if (contentLenPos != std::string::npos) {
+        size_t lineEnd = state.readBuffer.find("\r\n", contentLenPos);
+        size_t valStart = contentLenPos + strlen("Content-Length:");
+        std::string val = state.readBuffer.substr(valStart, lineEnd - valStart);
+        val = ftTrim(val);
+        contentLen = static_cast<size_t>(atoi(val.c_str()));
     }
 
-    // Check if Transfer-Encoding: chunked is present
+    if (contentLenPos != std::string::npos) {
+        size_t bodyLen = state.readBuffer.size() - (hdrEnd + 4);
+        if (bodyLen < contentLen) return; // attendre le reste
+    }
+
+    // gérer chunked si nécessaire
     bool isChunked = false;
     size_t tePos = state.readBuffer.find("Transfer-Encoding:");
     if (tePos != std::string::npos) {
@@ -352,74 +338,32 @@ void Server::handleClientData(size_t index)
         if (teLine.find("chunked") != std::string::npos) isChunked = true;
     }
 
-    // Try to extract Content-Length if present
-    size_t contentLenPos = state.readBuffer.find("Content-Length:");
-    size_t contentLength = 0;
-    if (contentLenPos != std::string::npos) {
-        size_t lineEnd = state.readBuffer.find("\r\n", contentLenPos);
-        if (lineEnd == std::string::npos) lineEnd = hdrEnd;
-        size_t valStart = contentLenPos + strlen("Content-Length:");
-        std::string val = state.readBuffer.substr(valStart, lineEnd - valStart);
-        size_t first = val.find_first_not_of(" \t");
-        size_t last = val.find_last_not_of(" \t");
-        if (first != std::string::npos && last != std::string::npos)
-            val = val.substr(first, last - first + 1);
-        else
-            val = "0";
-        contentLength = static_cast<size_t>(atoi(val.c_str()));
-    }
-
-    size_t bodyLen = state.readBuffer.size() - (hdrEnd + 4);
-    if (contentLenPos != std::string::npos && bodyLen < contentLength) {
-        // wait for rest of body
-        return;
-    }
-
     if (isChunked) {
-        // Quick heuristic: check for terminating chunk '0\r\n' after body
         size_t zeroChunkPos = state.readBuffer.find("\r\n0\r\n", hdrEnd + 4);
-        if (zeroChunkPos == std::string::npos) {
-            // body not complete yet
-            return;
-        }
-        // Extract chunked body substring
+        if (zeroChunkPos == std::string::npos) return; // attendre le reste
         std::string chunkedBody = state.readBuffer.substr(hdrEnd + 4);
         std::string dechunked = dechunkBody(chunkedBody);
         if (dechunked.empty() && !chunkedBody.empty()) {
-            // dechunk failed -> bad request
-            if (_clientToServer.count(client_fd) && _clientToServer[client_fd])
-                queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *_clientToServer[client_fd], NULL));
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, NULL));
             state.readBuffer.clear();
             return;
         }
-
-        // enforce client_max_body_size if configured
-        if (_clientToServer.count(client_fd) && _clientToServer[client_fd]) {
-            const ServerConfig *sconf = _clientToServer[client_fd];
-            if (sconf->clientMaxBodySize > 0 && dechunked.size() > sconf->clientMaxBodySize) {
-                queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *sconf, NULL));
-                state.readBuffer.clear();
-                return;
-            }
+        if (serverConf->clientMaxBodySize > 0 && dechunked.size() > serverConf->clientMaxBodySize) {
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, NULL));
+            state.readBuffer.clear();
+            return;
         }
-
-        // Replace buffer with headers + dechunked body for parser
         std::string headers = state.readBuffer.substr(0, hdrEnd + 4);
         state.readBuffer = headers + dechunked;
-        bodyLen = dechunked.size();
     }
 
-    // We have enough to parse a full request
+    // On peut maintenant parser la requête
     HttpRequestParser parser;
     HttpRequest req;
     try {
         req = parser.parseRequest(state.readBuffer);
-    } catch (std::exception &e) {
-        if (_clientToServer.count(client_fd) && _clientToServer[client_fd])
-            queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *_clientToServer[client_fd], NULL));
-        else
-            std::cerr << "handleClientData: client config missing when sending 400\n";
-        // clear buffer
+    } catch (...) {
+        queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, NULL));
         state.readBuffer.clear();
         return;
     }
@@ -444,13 +388,6 @@ void Server::handleClientData(size_t index)
         queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
         return;
     }
-
-        // après le fallback si (!locationConf && !serverConf->locations.empty()) ...
-    if (locationConf)
-        std::cerr << "[DEBUG] Selected location path = [" << locationConf->path << "] root = [" << locationConf->root << "]\n";
-    else
-        std::cerr << "[DEBUG] No location selected, using server root = [" << serverConf->root << "]\n";
-
 
     // 🔹 Vérifier méthode autorisée (avec fallback par défaut)
     std::set<std::string> allowed;

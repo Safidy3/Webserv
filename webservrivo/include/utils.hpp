@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/29 16:22:27 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/07 14:14:57 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/11 15:48:56 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,10 +50,8 @@ std::string extractFieldName(const std::string &part);
 
 std::string normalizeRelativePath(const std::string &relative);
 bool isPathInsideRoot(const std::string &root, const std::string &target, std::string &outCanonicalTarget);
-std::string generateAutoindexHTML(const std::string &dirPath, const std::string &uri);
-std::string parseCGIStatusFromHeaders(const std::string &headers);
 bool checkClientMaxBodySize(size_t contentLength, size_t clientMaxBodySize);
-// Dechunk a Transfer-Encoding: chunked body. Returns empty string on parse error.
+std::string ftTrim(const std::string &s);
 std::string dechunkBody(const std::string &chunkedBody);
 
 bool isCgiRequest(const HttpRequest &req, const LocationConfig &locationConf, std::string &cgiPath);

@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:37:39 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/26 13:53:35 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/11 15:44:52 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,17 @@ class Server
             bool chunked;
             time_t lastActivity;
             time_t createdAt;
-            ClientState(): readBuffer(), headersComplete(false), expectedBody(0), chunked(false), lastActivity(0), createdAt(0) {}
+            size_t receivedBody;
+            
+                ClientState()
+                    : readBuffer(),
+                    headersComplete(false),
+                    expectedBody(0),
+                    chunked(false),
+                    lastActivity(0),
+                    createdAt(0),
+                    receivedBody(0)
+                {}
         };
         std::map<int, ClientState> _clients;
         static const int CLIENT_IDLE_TIMEOUT_SEC = 60; // close after 60s idle
