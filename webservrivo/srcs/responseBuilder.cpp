@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/09 17:33:37 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/12 10:32:38 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -178,12 +178,12 @@ std::string HttpResponseBuilder::buildResponse(
                     filePath = altPath;
             }
 
-            // Gestion des dossiers
+            //* Handle directories
             if (stat(filePath.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
             {
                 bool indexFound = false;
 
-                // Cherche les fichiers index
+                //* Find index file in locationConf
                 for (size_t i = 0; i < locationConf.indexFiles.size(); ++i)
                 {
                     std::string idxPath = filePath + "/" + locationConf.indexFiles[i];
@@ -193,7 +193,7 @@ std::string HttpResponseBuilder::buildResponse(
                         std::string contentType = getMimeType(idxPath);
                         if (contentType.find("text/") == 0 || contentType == "application/json")
                             contentType += "; charset=UTF-8";
-
+                   
                         headers = "Content-Type: " + contentType + "\r\n";
                         headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
                         indexFound = true;
@@ -201,7 +201,7 @@ std::string HttpResponseBuilder::buildResponse(
                     }
                 }
 
-                // Si pas trouvé dans locationConf, teste serverConf
+                //* Find if index file is in serverConf
                 if (!indexFound)
                 {
                     for (size_t i = 0; i < serverConf.indexFiles.size(); ++i)
@@ -233,10 +233,7 @@ std::string HttpResponseBuilder::buildResponse(
                     }
                     else
                     {
-                        statusLine = "HTTP/1.1 403 Forbidden\r\n";
-                        body = "<h1>403 Forbidden</h1>";
-                        headers = "Content-Type: text/html; charset=UTF-8\r\n";
-                        headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
+                        return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
                     }
                 }
             }
@@ -255,10 +252,7 @@ std::string HttpResponseBuilder::buildResponse(
     }
     catch (...)
     {
-        statusLine = "HTTP/1.1 404 Not Found\r\n";
-        body = "<h1>404 Not Found</h1>";
-        headers = "Content-Type: text/html; charset=UTF-8\r\n";
-        headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
+        return HandleErrors::generateErrorResponse(404, serverConf, &locationConf);
     }
 
     std::ostringstream response;

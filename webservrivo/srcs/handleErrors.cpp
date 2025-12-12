@@ -70,7 +70,14 @@ std::string HandleErrors::generateErrorResponse(
     std::map<int,std::string>::const_iterator it = serverConf.errorPages.find(code);
     std::string body;
     if (it != serverConf.errorPages.end()) {
-        std::ifstream file(it->second.c_str());
+
+        std::string errorPath = it->second;
+        if (!errorPath.empty() && errorPath[0] == '/') {
+            errorPath = serverConf.root + errorPath;
+        }
+
+        std::ifstream file(errorPath.c_str());
+
         if (file) {
             std::ostringstream ss;
             ss << file.rdbuf();
