@@ -199,7 +199,7 @@ nofollow = ib.adnxs.com
 #
 # ex: limit = 1023 (default is 255)
 # 
-limit = 200
+limit = 255
 
 #
 # HTTP protocol.  Options HTTP/1.1 and HTTP/1.0. Some webservers have 

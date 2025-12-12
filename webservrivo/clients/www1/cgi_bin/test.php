@@ -1,5 +1,7 @@
 <?php
-$NAME = "sAFIDY";
-echo $NAME;
+
+    $NAME = "sAFIDY";
+    echo $NAME;
+    
 ?>
 
