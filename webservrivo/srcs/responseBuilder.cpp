@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/12 10:32:38 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/13 14:15:04 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -178,76 +178,86 @@ std::string HttpResponseBuilder::buildResponse(
                     filePath = altPath;
             }
 
-            //* Handle directories
-            if (stat(filePath.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+            if (file_exists(filePath))
             {
-                bool indexFound = false;
-
-                //* Find index file in locationConf
-                for (size_t i = 0; i < locationConf.indexFiles.size(); ++i)
+                //* Handle directories
+                if (S_ISDIR(st.st_mode))
                 {
-                    std::string idxPath = filePath + "/" + locationConf.indexFiles[i];
-                    if (file_exists(idxPath))
+                    bool indexFound = false;
+                    
+                    //* Find index file in locationConf
+                    for (size_t i = 0; i < locationConf.indexFiles.size(); ++i)
                     {
-                        body = ftReadFile(idxPath);
-                        std::string contentType = getMimeType(idxPath);
-                        if (contentType.find("text/") == 0 || contentType == "application/json")
-                            contentType += "; charset=UTF-8";
-                   
-                        headers = "Content-Type: " + contentType + "\r\n";
-                        headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
-                        indexFound = true;
-                        break;
-                    }
-                }
-
-                //* Find if index file is in serverConf
-                if (!indexFound)
-                {
-                    for (size_t i = 0; i < serverConf.indexFiles.size(); ++i)
-                    {
-                        std::string idxPath = filePath + "/" + serverConf.indexFiles[i];
+                        std::string idxPath = filePath + "/" + locationConf.indexFiles[i];
                         if (file_exists(idxPath))
                         {
                             body = ftReadFile(idxPath);
                             std::string contentType = getMimeType(idxPath);
                             if (contentType.find("text/") == 0 || contentType == "application/json")
                                 contentType += "; charset=UTF-8";
-
+                       
                             headers = "Content-Type: " + contentType + "\r\n";
                             headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
                             indexFound = true;
                             break;
                         }
                     }
+    
+                    //* Find if index file is in serverConf
+                    if (!indexFound)
+                    {
+                        for (size_t i = 0; i < serverConf.indexFiles.size(); ++i)
+                        {
+                            std::string idxPath = filePath + "/" + serverConf.indexFiles[i];
+                            if (file_exists(idxPath))
+                            {
+                                body = ftReadFile(idxPath);
+                                std::string contentType = getMimeType(idxPath);
+                                if (contentType.find("text/") == 0 || contentType == "application/json")
+                                    contentType += "; charset=UTF-8";
+    
+                                headers = "Content-Type: " + contentType + "\r\n";
+                                headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
+                                indexFound = true;
+                                break;
+                            }
+                        }
+                    }
+    
+                    // Aucun index trouvé
+                    if (!indexFound)
+                    {
+                        if (locationConf.autoindex)
+                        {
+                            body = generateAutoindexHTML(filePath, req.uri);
+                            headers = "Content-Type: text/html; charset=UTF-8\r\n";
+                            headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
+                        }
+                        else
+                        {
+                            return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
+                        }
+                    }
                 }
-
-                // Aucun index trouvé
-                if (!indexFound)
+                //* Handle files
+                else if (S_ISREG(st.st_mode) && access(filePath.c_str(), R_OK) == 0)
                 {
-                    if (locationConf.autoindex)
-                    {
-                        body = generateAutoindexHTML(filePath, req.uri);
-                        headers = "Content-Type: text/html; charset=UTF-8\r\n";
-                        headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
-                    }
-                    else
-                    {
-                        return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
-                    }
+                    std::cout << "dsjkfhsjkdhfksflhjsdlfjlsdfljslflsflj@@@@@@@@W\n";
+
+                    // Fichier normal
+                    body = ftReadFile(filePath);
+                    std::string contentType = getMimeType(filePath);
+                    if (contentType.find("text/") == 0 || contentType == "application/json")
+                        contentType += "; charset=UTF-8";
+    
+                    headers = "Content-Type: " + contentType + "\r\n";
+                    headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
                 }
+                else
+                    return HandleErrors::generateErrorResponse(500, serverConf, &locationConf);
             }
             else
-            {
-                // Fichier normal
-                body = ftReadFile(filePath);
-                std::string contentType = getMimeType(filePath);
-                if (contentType.find("text/") == 0 || contentType == "application/json")
-                    contentType += "; charset=UTF-8";
-
-                headers = "Content-Type: " + contentType + "\r\n";
-                headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
-            }
+                return HandleErrors::generateErrorResponse(404, serverConf, &locationConf);
         }
     }
     catch (...)

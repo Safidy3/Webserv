@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/29 16:22:27 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/11 15:48:56 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/13 13:37:29 by safandri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,8 @@ int ftToInt(const std::string &s);
 std::string ftStrdup(const char* s);
 bool file_exists(const std::string &path);
 std::string ftReadFile(const std::string &path);
+bool file_is_redable(const std::string& nomFichier);
+
 std::vector<std::string> ftSplitStr(const std::string& str, const std::string& delimiter);
 std::vector<std::string> splitParts(const std::string &body, const std::string &delimiter);
 std::string extractFilename(const std::string &part);

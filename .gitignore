@@ -28,8 +28,6 @@
 *.out
 *.app
 .vscode
-# Prerequisites
-*.d
 
 # Compiled Object files
 *.slo
