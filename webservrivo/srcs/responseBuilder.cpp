@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/14 08:37:23 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/14 11:30:25 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -224,7 +224,7 @@ std::string HttpResponseBuilder::buildResponse(
                         }
                     }
     
-                    //* if index not found
+                    // Aucun index trouvé
                     if (!indexFound)
                     {
                         if (locationConf.autoindex)
