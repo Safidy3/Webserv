@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/11 17:51:46 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/14 10:16:03 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -248,9 +248,7 @@ void Server::handleClientData(size_t index)
     size_t hdrEnd = state.readBuffer.find("\r\n\r\n");
     if (hdrEnd != std::string::npos) {
         size_t bodyStart = hdrEnd + 4;
-        size_t bodyBytes = (state.readBuffer.size() > bodyStart)
-                           ? state.readBuffer.size() - bodyStart
-                           : 0;
+        size_t bodyBytes = (state.readBuffer.size() > bodyStart) ? state.readBuffer.size() - bodyStart : 0;
         state.receivedBody = bodyBytes;
 
         const ServerConfig* serverConfTmp = _clientToServer[client_fd];
@@ -258,6 +256,9 @@ void Server::handleClientData(size_t index)
 
         if (maxBody > 0 && state.receivedBody > maxBody) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
+            state.readBuffer.clear();
+            _clients[client_fd].receivedBody = 0;
+            _closeAfterSend[client_fd] = true; 
             return;
         }
     }
@@ -383,6 +384,9 @@ void Server::handleClientData(size_t index)
     // Enforcer client_max_body_size (après détermination de la location)
     if (checkClientMaxBodySize(req.contentLength, serverConf->clientMaxBodySize)) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
+        state.readBuffer.clear();
+        state.receivedBody = 0;
+        _closeAfterSend[client_fd] = true; 
         return;
     }
 
