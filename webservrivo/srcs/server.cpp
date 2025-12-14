@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/14 12:04:19 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/14 14:44:40 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -258,6 +258,7 @@ void Server::handleClientData(size_t index)
 
         if (maxBody > 0 && state.receivedBody > maxBody) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
+            
             return;
         }
     }
@@ -541,27 +542,23 @@ void Server::handleClientData(size_t index)
 
         std::string canonTarget;
         if (!isPathInsideRoot(root, targetPath, canonTarget)) {
-            queueResponse(client_fd,
-                HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
             return;
         }
         
         struct stat st;
         if (stat(canonTarget.c_str(), &st) == -1) {
-            queueResponse(client_fd,
-                HandleErrors::generateErrorResponse(404, *serverConf, locationConf));
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(404, *serverConf, locationConf));
             return;
         }
 
         if (S_ISDIR(st.st_mode)) {
-            queueResponse(client_fd,
-                HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
             return;
         }
 
         if (unlink(canonTarget.c_str()) == -1) {
-            queueResponse(client_fd,
-                HandleErrors::generateErrorResponse(500, *serverConf, locationConf));
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(500, *serverConf, locationConf));
             return;
         }
 

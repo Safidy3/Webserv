@@ -1,0 +1,10 @@
+server bloquante cgi
+
+gestion point virgule
+
+403 error 
+505 error
+
+408 Request Timeout
+
+redirection:            return 301 https://google.com;
