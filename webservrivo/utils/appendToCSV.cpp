@@ -55,14 +55,11 @@ void appendToCSV(const std::map<std::string, std::string> &fields,
 
     std::string line;
     if (empty) {
-        line += "FirstName;Name;sex;BirthDay;status;phone;email;information;filename\n";
+        line += "FirstName;Name;phone;email;information;filename\n";
     }
 
     line += getFieldValue(fields, "FirstName"); line += ";";
     line += getFieldValue(fields, "Name"); line += ";";
-    line += getFieldValue(fields, "sex"); line += ";";
-    line += getFieldValue(fields, "BirthDay"); line += ";";
-    line += getFieldValue(fields, "status"); line += ";";
     line += getFieldValue(fields, "phone"); line += ";";
     line += getFieldValue(fields, "email"); line += ";";
     line += getFieldValue(fields, "information"); line += ";";

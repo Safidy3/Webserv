@@ -69,15 +69,16 @@ std::string HandleErrors::generateErrorResponse(
     // Chercher error_page dans ServerConfig
     std::map<int,std::string>::const_iterator it = serverConf.errorPages.find(code);
     std::string body;
+
     if (it != serverConf.errorPages.end()) {
-
         std::string errorPath = it->second;
-        if (!errorPath.empty() && errorPath[0] == '/') {
-            errorPath = serverConf.root + errorPath;
-        }
 
-        std::ifstream file(errorPath.c_str());
+        if (!errorPath.empty() && errorPath[0] == '/')
+            errorPath.erase(0, 1);
 
+        std::string fullPath = serverConf.root + "/" + errorPath;
+
+        std::ifstream file(fullPath.c_str());
         if (file) {
             std::ostringstream ss;
             ss << file.rdbuf();

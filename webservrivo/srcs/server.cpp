@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/14 11:30:17 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/14 12:04:19 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -386,7 +386,7 @@ void Server::handleClientData(size_t index)
         return;
     }
 
-    // 🔹 Vérifier méthode autorisée (avec fallback par défaut)
+    /*// 🔹 Vérifier méthode autorisée (avec fallback par défaut)
     std::set<std::string> allowed;
     if (locationConf && !locationConf->methods.empty()) {
         allowed.insert(locationConf->methods.begin(), locationConf->methods.end());
@@ -395,6 +395,7 @@ void Server::handleClientData(size_t index)
         allowed.insert("POST");
         allowed.insert("DELETE");
     }
+
 
     // Vérifier que la méthode est valide (non vide)
     if (req.method.empty()) {
@@ -405,7 +406,35 @@ void Server::handleClientData(size_t index)
     if (allowed.find(req.method) == allowed.end()) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(405, *serverConf, locationConf, "Allow: GET, POST, DELETE\r\n"));
         return;
+    }*/
+   // 🔹 Vérifier méthode autorisée (sans fallback par défaut)
+    std::set<std::string> allowed;
+    if (locationConf && !locationConf->methods.empty()) {
+        allowed.insert(locationConf->methods.begin(), locationConf->methods.end());
     }
+
+    // Vérifier que la méthode est valide (non vide)
+    if (req.method.empty()) {
+        queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, locationConf));
+        return;
+    }
+
+    if (allowed.find(req.method) == allowed.end()) {
+        std::string allowHeader;
+        if (!allowed.empty()) {
+            allowHeader = "Allow: ";
+            bool first = true;
+            for (std::set<std::string>::const_iterator it = allowed.begin(); it != allowed.end(); ++it) {
+                if (!first) allowHeader += ", ";
+                allowHeader += *it;
+                first = false;
+            }
+            allowHeader += "\r\n";
+        }
+        queueResponse(client_fd, HandleErrors::generateErrorResponse(405, *serverConf, locationConf, allowHeader));
+        return;
+    }
+
 
     if (req.method == "POST") {
         std::string contentType = req.headers["Content-Type"];
