@@ -571,48 +571,41 @@ void Server::run()
 {
     while (true)
     {
-        int poll_count = poll(_fds.data(), _fds.size(), 1000); // 1s timeout to allow timeouts handling
+        int poll_count = poll(_fds.data(), _fds.size(), 1000);
         if (poll_count == -1)
         {
             std::cerr << "Error: poll failed\n";
             break;
         }
-        // Iterate backwards so that removing an fd doesn't affect unprocessed indices
-        for (int ii = static_cast<int>(_fds.size()) - 1; ii >= 0; --ii)
+
+        for (int k = static_cast<int>(_fds.size()) - 1; k >= 0; --k)
         {
-            size_t i = static_cast<size_t>(ii);
+            size_t i = static_cast<size_t>(k);
             if (_fds[i].revents & POLLIN)
             {
                 if (_listenSockets.count(_fds[i].fd)) {
-                    // C’est un socket d’écoute
                     handleNewConnection(i);
                 }
                 else {
-                    // C’est un client
                     handleClientData(i);
                 }
             }
             if (_fds[i].revents & POLLOUT) {
-                // handle pending send
                 handlePollOut(i);
             }
             if (_fds[i].revents & (POLLHUP | POLLERR)) {
-                // close client and cleanup
                 closeClient(i);
             }
         }
 
-        // Timeout sweep: close idle or too-old connections
         time_t now = time(NULL);
-        for (int ii = static_cast<int>(_fds.size()) - 1; ii >= 0; --ii) {
-            size_t i = static_cast<size_t>(ii);
+        for (int k = static_cast<int>(_fds.size()) - 1; k >= 0; --k) {
+            size_t i = static_cast<size_t>(k);
             int fd = _fds[i].fd;
-            // skip listening sockets
             if (_listenSockets.count(fd)) continue;
             if (_clients.find(fd) == _clients.end()) continue;
             ClientState &st = _clients[fd];
             if (st.lastActivity != 0 && now - st.lastActivity > CLIENT_IDLE_TIMEOUT_SEC) {
-                // idle timeout
                 std::cout << "Closing idle client " << fd << " after " << (now - st.lastActivity) << "s\n";
                 closeClient(i);
                 continue;

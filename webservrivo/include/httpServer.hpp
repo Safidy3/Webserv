@@ -50,14 +50,12 @@ class Server
         std::vector<int> _clientSockets;
         std::map<int, std::vector<const ServerConfig*> > _listenSockets;
         std::map<int, const ServerConfig*> _clientToServer;
-        std::map<int, int> _clientToListenSocket;  // map client_fd -> listening_socket_fd
+        std::map<int, int> _clientToListenSocket;
         MimeTypes &_mimeTypes;
-        
-        // Outgoing send buffers for non-blocking writes
+
         std::map<int, std::string> _sendBuffers;
         std::map<int, bool> _closeAfterSend;
         
-        // Per-client read buffers and parsing state
         struct ClientState {
             std::string readBuffer;
             bool headersComplete;
@@ -67,19 +65,12 @@ class Server
             time_t createdAt;
             size_t receivedBody;
             
-                ClientState()
-                    : readBuffer(),
-                    headersComplete(false),
-                    expectedBody(0),
-                    chunked(false),
-                    lastActivity(0),
-                    createdAt(0),
-                    receivedBody(0)
-                {}
+            ClientState() : readBuffer(), headersComplete(false), expectedBody(0), chunked(false), lastActivity(0), createdAt(0), receivedBody(0) {}
         };
+        
         std::map<int, ClientState> _clients;
-        static const int CLIENT_IDLE_TIMEOUT_SEC = 60; // close after 60s idle
-        static const int CLIENT_TOTAL_TIMEOUT_SEC = 300; // max 5 minutes per connection
+        static const int CLIENT_IDLE_TIMEOUT_SEC = 60;
+        static const int CLIENT_TOTAL_TIMEOUT_SEC = 300;
 
         void setupListeningSockets();
         void handleNewConnection(size_t index);
