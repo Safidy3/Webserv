@@ -23,6 +23,7 @@ std::map<int, std::string> HandleErrors::initReasonMap() {
     reasons[413] = "Payload Too Large";
     reasons[500] = "Internal Server Error";
     reasons[501] = "Not Implemented";
+    reasons[505] = "HTTP Version Not Supported";
     return reasons;
 }
 

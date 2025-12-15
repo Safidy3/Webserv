@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/15 15:49:59 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/15 19:21:59 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,7 +108,7 @@ std::string HttpResponseBuilder::buildResponse(
         // =====================================================
         // 🔹 GESTION REDIRECT
         // =====================================================
-        if (!locationConf.returnPath.empty() && locationConf.returnCode >= 300 && locationConf.returnCode < 400)
+        if (!locationConf.path.empty() && !locationConf.returnPath.empty() && locationConf.returnCode >= 300 && locationConf.returnCode < 400)
         {
             std::ostringstream resp;
             resp << "HTTP/1.0 " << locationConf.returnCode << " Moved Permanently\r\n";
@@ -117,7 +117,6 @@ std::string HttpResponseBuilder::buildResponse(
             resp << "Connection: close\r\n\r\n";
             return resp.str();
         }
-
 
         // =====================================================
         // 🔹 GESTION CGI
@@ -139,15 +138,13 @@ std::string HttpResponseBuilder::buildResponse(
                 headers = cgiOutput.substr(0, pos);
                 body = cgiOutput.substr(pos + 4);
 
-                if (headers.find("Content-Length") == std::string::npos) {
-                    headers += "\r\nContent-Length: " + ftToString(body.size());
-                } else {
-                    size_t clPos = headers.find("Content-Length:");
-                    if (clPos != std::string::npos) {
-                        size_t end = headers.find("\r\n", clPos);
-                        headers.replace(clPos, end - clPos, "Content-Length: " + ftToString(body.size()));
-                    }
+                size_t clPos = headers.find("Content-Length:");
+                if (clPos != std::string::npos) {
+                    size_t end = headers.find("\r\n", clPos);
+                    headers.erase(clPos, end - clPos + 2);
                 }
+
+                headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
 
                 std::string parsed = parseCGIStatusFromHeaders(headers);
                 if (!parsed.empty())
@@ -278,6 +275,10 @@ std::string HttpResponseBuilder::buildResponse(
     {
         return HandleErrors::generateErrorResponse(404, serverConf, &locationConf);
     }
+
+    headers += "Cache-Control: no-store, no-cache, must-revalidate\r\n";
+    headers += "Pragma: no-cache\r\n";
+    headers += "Expires: 0\r\n";
 
     std::ostringstream response;
     if (headers.size() < 2 || headers.substr(headers.size() - 2) != "\r\n")

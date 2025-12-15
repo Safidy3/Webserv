@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/15 15:40:04 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/15 18:56:03 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -360,10 +360,11 @@ void Server::handleClientData(size_t index)
     HttpRequest req;
     try {
         req = parser.parseRequest(state.readBuffer);
-        /*if (req.httpVersion != "HTTP/1.0") {
+        if (req.httpVersion != "HTTP/1.0" && req.httpVersion != "HTTP/1.1") {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(505, *serverConf, NULL));
             return;
-        }*/
+        }
+
     } catch (...) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, NULL));
         state.readBuffer.clear();
