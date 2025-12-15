@@ -308,7 +308,7 @@ start(BROWSER this)
           ;;
         } else if (my.cache && is_cached(this->conn->cache, u)) {
           RESPONSE r = new_response();
-          response_set_code(r, "HTTP/1.1 200 OK");
+          response_set_code(r, "HTTP/1.0 200 OK");
           response_set_from_cache(r, TRUE);
           __display_result(this, r, u, 0, 0.00);
           r = response_destroy(r);

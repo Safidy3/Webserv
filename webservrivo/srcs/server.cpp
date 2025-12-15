@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/14 14:44:40 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/15 15:40:04 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -180,7 +180,7 @@ void Server::handleMultipartUpload(const HttpRequest &req, const std::string &ra
     appendToCSV(fields, uploadDir + "/contacts.csv", uploadedFilename);
 
     std::string response =
-        "HTTP/1.1 201 Created\r\n"
+        "HTTP/1.0 201 Created\r\n"
         "Content-Length: 0\r\n"
         "Connection: close\r\n\r\n";
 
@@ -360,6 +360,10 @@ void Server::handleClientData(size_t index)
     HttpRequest req;
     try {
         req = parser.parseRequest(state.readBuffer);
+        /*if (req.httpVersion != "HTTP/1.0") {
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(505, *serverConf, NULL));
+            return;
+        }*/
     } catch (...) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, NULL));
         state.readBuffer.clear();
@@ -387,27 +391,6 @@ void Server::handleClientData(size_t index)
         return;
     }
 
-    /*// 🔹 Vérifier méthode autorisée (avec fallback par défaut)
-    std::set<std::string> allowed;
-    if (locationConf && !locationConf->methods.empty()) {
-        allowed.insert(locationConf->methods.begin(), locationConf->methods.end());
-    } else {
-        allowed.insert("GET");
-        allowed.insert("POST");
-        allowed.insert("DELETE");
-    }
-
-
-    // Vérifier que la méthode est valide (non vide)
-    if (req.method.empty()) {
-        queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, locationConf));
-        return;
-    }
-    
-    if (allowed.find(req.method) == allowed.end()) {
-        queueResponse(client_fd, HandleErrors::generateErrorResponse(405, *serverConf, locationConf, "Allow: GET, POST, DELETE\r\n"));
-        return;
-    }*/
    // 🔹 Vérifier méthode autorisée (sans fallback par défaut)
     std::set<std::string> allowed;
     if (locationConf && !locationConf->methods.empty()) {
@@ -488,7 +471,7 @@ void Server::handleClientData(size_t index)
 
             // Ensuite, envoyer une redirection HTTP 303
             std::ostringstream response;
-            response << "HTTP/1.1 303 See Other\r\n";
+            response << "HTTP/1.0 303 See Other\r\n";
             response << "Location: /uploads\r\n"; // ou /uploads/success.html si tu préfères
             response << "Content-Length: 0\r\n";
             response << "Connection: close\r\n\r\n";
@@ -563,7 +546,7 @@ void Server::handleClientData(size_t index)
         }
 
         std::string resp =
-            "HTTP/1.1 204 No Content\r\n"
+            "HTTP/1.0 204 No Content\r\n"
             "Content-Length: 0\r\n"
                 "Connection: close\r\n\r\n";
 

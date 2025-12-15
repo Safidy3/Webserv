@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/27 15:40:20 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/15 15:57:10 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,8 +109,11 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
         }
         else if (token == "redirect")
         {
-            loc.returnCode = 301;
-            loc.returnPath = value;
+            std::stringstream ss(value);
+            ss >> loc.returnPath;
+            ss >> loc.returnCode;
+            if (!loc.returnCode)
+                loc.returnCode = 301;
         }
         else if (token == "default_file") loc.defaultFile = value;
         else if (token == "cgi_extension") loc.cgiExtension = value;

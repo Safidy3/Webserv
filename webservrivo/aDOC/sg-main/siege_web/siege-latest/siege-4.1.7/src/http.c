@@ -154,7 +154,7 @@ http_get(CONN *C, URL U)
   if (my.protocol == FALSE || my.get == TRUE || my.print == TRUE) {
     snprintf(protocol, sizeof(protocol), "HTTP/1.0");
   } else {
-    snprintf(protocol, sizeof(protocol), "HTTP/1.1");
+    snprintf(protocol, sizeof(protocol), "HTTP/1.0");
   }
   if (C->connection.keepalive == TRUE) {
     snprintf(keepalive, sizeof(keepalive), "keep-alive");
@@ -314,7 +314,7 @@ http_post(CONN *C, URL U)
   if (my.protocol == FALSE || my.get == TRUE || my.print == TRUE) { 
     snprintf(protocol, sizeof(protocol), "HTTP/1.0");
   } else {
-    snprintf(protocol, sizeof(protocol), "HTTP/1.1");
+    snprintf(protocol, sizeof(protocol), "HTTP/1.0");
   }
   if (C->connection.keepalive == TRUE) {
     snprintf(keepalive, sizeof(keepalive), "keep-alive");

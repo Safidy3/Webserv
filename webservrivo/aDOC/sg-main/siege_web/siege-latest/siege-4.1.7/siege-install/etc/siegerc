@@ -164,7 +164,7 @@ nofollow = ib.adnxs.com
 #
 # example: timestamp = true|false (default false)
 #
-# [Sat, 2010-11-20 10:39:13] HTTP/1.1 200  0.12 secs: 4003 bytes ==> / 
+# [Sat, 2010-11-20 10:39:13] HTTP/1.0 200  0.12 secs: 4003 bytes ==> / 
 # 
 # timestamp = true
 
@@ -175,7 +175,7 @@ nofollow = ib.adnxs.com
 #
 # ex: fullurl = true|false (default false)
 #
-# HTTP/1.1 301 0.34 secs: 311 bytes ==> GET  https://www.joedog.org/
+# HTTP/1.0 301 0.34 secs: 311 bytes ==> GET  https://www.joedog.org/
 # 
 # fullurl = true
 
@@ -185,7 +185,7 @@ nofollow = ib.adnxs.com
 #
 # ex: display-id = true|false
 #
-# 100) HTTP/1.1 200   0.31 secs:   35338 bytes ==> GET  /images/bbc.jpg
+# 100) HTTP/1.0 200   0.31 secs:   35338 bytes ==> GET  /images/bbc.jpg
 #
 # display-id = 
 
@@ -202,18 +202,18 @@ nofollow = ib.adnxs.com
 limit = 200
 
 #
-# HTTP protocol.  Options HTTP/1.1 and HTTP/1.0. Some webservers have 
+# HTTP protocol.  Options HTTP/1.0 and HTTP/1.0. Some webservers have 
 # broken implementation of the 1.1 protocol which skews throughput 
 # evaluations. If you notice some siege clients hanging for extended
 # periods of time, change this to HTTP/1.0
 #
-# ex: protocol = HTTP/1.1
+# ex: protocol = HTTP/1.0
 #     protocol = HTTP/1.0
 #
-protocol = HTTP/1.1
+protocol = HTTP/1.0
 
 #
-# Chunked encoding is required by HTTP/1.1 protocol but siege allows 
+# Chunked encoding is required by HTTP/1.0 protocol but siege allows 
 # you to turn it off as desired. This feature is generally more useful
 # to siege developers than siege users. You should probably leave it
 # set to 'true'
@@ -225,13 +225,13 @@ chunked = true
 # 
 # Cache revalidation. Siege supports cache revalidation for both ETag
 # and Last-modified headers. If a copy is still fresh, the server 
-# responds with 304. While this feature is required for HTTP/1.1, it 
+# responds with 304. While this feature is required for HTTP/1.0, it 
 # may not be welcomed for load testing. We allow you to breach the 
 # protocol and turn off caching
 #
-# HTTP/1.1 200   0.00 secs:    2326 bytes ==> /apache_pb.gif
-# HTTP/1.1 304   0.00 secs:       0 bytes ==> /apache_pb.gif
-# HTTP/1.1 304   0.00 secs:       0 bytes ==> /apache_pb.gif
+# HTTP/1.0 200   0.00 secs:    2326 bytes ==> /apache_pb.gif
+# HTTP/1.0 304   0.00 secs:       0 bytes ==> /apache_pb.gif
+# HTTP/1.0 304   0.00 secs:       0 bytes ==> /apache_pb.gif
 #
 # Siege also supports Cache-control headers. Consider this server 
 # response: Cache-Control: max-age=3
@@ -240,10 +240,10 @@ chunked = true
 # its cache. In verbose output, it designates a cached resource 
 # with (c):
 #
-# HTTP/1.1 200     0.25 secs:     159 bytes ==> GET  /expires/
-# HTTP/1.1 200     1.48 secs:  498419 bytes ==> GET  /expires/Otter_in_Southwold.jpg
-# HTTP/1.1 200     0.24 secs:     159 bytes ==> GET  /expires/
-# HTTP/1.1 200(C)  0.00 secs:       0 bytes ==> GET  /expires/Otter_in_Southwold.jpg
+# HTTP/1.0 200     0.25 secs:     159 bytes ==> GET  /expires/
+# HTTP/1.0 200     1.48 secs:  498419 bytes ==> GET  /expires/Otter_in_Southwold.jpg
+# HTTP/1.0 200     0.24 secs:     159 bytes ==> GET  /expires/
+# HTTP/1.0 200(C)  0.00 secs:       0 bytes ==> GET  /expires/Otter_in_Southwold.jpg
 #
 # NOTE: with color enabled, cached URLs appear in green
 # 

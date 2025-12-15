@@ -206,7 +206,7 @@ show_config(int EXIT)
   printf("color:                          %s\n", my.color  ? "true"     : "false");
   printf("quiet:                          %s\n", my.quiet    ? "true"     : "false");
   printf("debug:                          %s\n", my.debug    ? "true"     : "false");
-  printf("protocol:                       %s\n", my.protocol ? "HTTP/1.1" : "HTTP/1.0");
+  printf("protocol:                       %s\n", my.protocol ? "HTTP/1.0" : "HTTP/1.0");
   printf("HTML parser:                    %s\n", my.parser   ? "enabled"  : "disabled");
   printf("get method:                     %s\n", method);
   if (auth_get_proxy_required(my.auth)){
@@ -568,7 +568,7 @@ load_conf(char *filename)
         my.keepalive = FALSE; 
     }
     else if (strmatch(option, "protocol")) {
-      if (!strncasecmp(value, "HTTP/1.1", 8))
+      if (!strncasecmp(value, "HTTP/1.0", 8))
         my.protocol = TRUE;
       else
         my.protocol = FALSE; 

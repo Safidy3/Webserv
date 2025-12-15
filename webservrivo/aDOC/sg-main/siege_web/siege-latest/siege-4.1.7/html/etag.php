@@ -5,7 +5,7 @@
   $etag = "ETag: \"" . $v . "." . $d . "\"";
 
   if(isset($_SERVER['HTTP_IF_NONE_MATCH']) && eregi($_SERVER['HTTP_IF_NONE_MATCH'], $etag)){
-    header("HTTP/1.1 304 Not Modified"); 
+    header("HTTP/1.0 304 Not Modified"); 
     header($etag);
     exit(0);
   } else {

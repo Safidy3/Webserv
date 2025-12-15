@@ -12,7 +12,7 @@ Ouvrir et lire le contenu.
 
 Retourner une réponse HTTP :
 
-HTTP/1.1 200 OK
+HTTP/1.0 200 OK
 Content-Type: text/html
 Content-Length: <taille du fichier>
 

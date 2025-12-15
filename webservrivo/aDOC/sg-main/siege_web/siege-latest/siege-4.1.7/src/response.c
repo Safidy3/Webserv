@@ -126,7 +126,7 @@ response_get_code(RESPONSE this)
 char *
 response_get_protocol(RESPONSE this)
 {
-  return ((char*)hash_get(this->headers, PROTOCOL) == NULL) ? "HTTP/1.1" :
+  return ((char*)hash_get(this->headers, PROTOCOL) == NULL) ? "HTTP/1.0" :
           (char*)hash_get(this->headers, PROTOCOL);
 }
 

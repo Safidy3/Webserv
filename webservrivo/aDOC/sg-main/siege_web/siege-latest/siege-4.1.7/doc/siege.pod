@@ -96,7 +96,7 @@ gmethod = HEAD|GET
   User-Agent: Mozilla/5.0 (unknown-x86_64-linux-gnu) Siege/4.0.0-beta5
   Connection: close
 
-  HTTP/1.1 200 OK
+  HTTP/1.0 200 OK
   Server: cloudflare-nginx
   Date: Tue, 09 Feb 2016 18:18:41 GMT
   Content-Type: text/html; charset=UTF-8
@@ -122,7 +122,7 @@ from the server.
   User-Agent: Mozilla/5.0 (unknown-x86_64-linux-gnu) Siege/4.0.3rc1
   Connection: close
 
-  HTTP/1.1 301 Moved Permanently
+  HTTP/1.0 301 Moved Permanently
   Date: Wed, 19 Oct 2016 16:58:13 GMT
   Content-Type: text/html; charset=iso-8859-1
   Location: https://www.joedog.org/

@@ -97,7 +97,7 @@ std::string HandleErrors::generateErrorResponse(
 
     // Construire réponse HTTP
     std::ostringstream oss;
-    oss << "HTTP/1.1 " << code << " " << reason << "\r\n";
+    oss << "HTTP/1.0 " << code << " " << reason << "\r\n";
     oss << "Content-Type: text/html\r\n";
     if (!extraHeaders.empty())
         oss << extraHeaders;

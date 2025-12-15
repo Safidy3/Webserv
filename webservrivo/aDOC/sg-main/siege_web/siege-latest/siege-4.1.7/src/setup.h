@@ -182,7 +182,7 @@ struct CONFIG
   BOOLEAN print;         /* get header and page for debugging       */ 
   BOOLEAN mark;          /* signifies a log file mark req.          */ 
   char    *markstr;      /* user defined string value to mark file  */
-  int     protocol;      /* 0=HTTP/1.0; 1=HTTP/1.1                  */
+  int     protocol;      /* 0=HTTP/1.0; 1=HTTP/1.0                  */
   COOKIES cookies;       /* cookies    */
   char uagent[256];      /* user defined User-Agent string.         */
   char encoding[256];    /* user defined Accept-Encoding string.    */

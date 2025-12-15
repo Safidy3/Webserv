@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/14 11:30:25 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/15 15:49:59 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ std::string HttpResponseBuilder::parseCGIStatusFromHeaders(const std::string &he
             std::string status = line.substr(7);
             size_t s = status.find_first_not_of(" \t");
             if (s != std::string::npos) status = status.substr(s);
-            return std::string("HTTP/1.1 ") + status + "\r\n";
+            return std::string("HTTP/1.0 ") + status + "\r\n";
         }
     }
     return std::string();
@@ -78,7 +78,7 @@ std::string HttpResponseBuilder::buildResponse(
     const LocationConfig &locationConf)
 {
     std::string body;
-    std::string statusLine = "HTTP/1.1 200 OK\r\n";
+    std::string statusLine = "HTTP/1.0 200 OK\r\n";
     std::string headers;
 
     try
@@ -99,11 +99,25 @@ std::string HttpResponseBuilder::buildResponse(
                 return HandleErrors::generateErrorResponse(500, serverConf, &locationConf);
 
             std::string response;
-            response  = "HTTP/1.1 204 No Content\r\n";
+            response  = "HTTP/1.0 204 No Content\r\n";
             response += "Content-Length: 0\r\n";
             response += "Connection: close\r\n\r\n";
             return response;
         }
+
+        // =====================================================
+        // 🔹 GESTION REDIRECT
+        // =====================================================
+        if (!locationConf.returnPath.empty() && locationConf.returnCode >= 300 && locationConf.returnCode < 400)
+        {
+            std::ostringstream resp;
+            resp << "HTTP/1.0 " << locationConf.returnCode << " Moved Permanently\r\n";
+            resp << "Location: " << locationConf.returnPath << "\r\n";
+            resp << "Content-Length: 0\r\n";
+            resp << "Connection: close\r\n\r\n";
+            return resp.str();
+        }
+
 
         // =====================================================
         // 🔹 GESTION CGI
