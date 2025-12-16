@@ -6,11 +6,12 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/15 15:57:10 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 11:50:31 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/httpConfig.hpp"
+#include "../include/configError.hpp"
 
 ConfigParser::ConfigParser(const std::string &configFilePathPath, const std::string &mimeTypesPath) 
     : _configFilePath(configFilePathPath), _mimeTypesPath(mimeTypesPath)
@@ -110,10 +111,23 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
         else if (token == "redirect")
         {
             std::stringstream ss(value);
-            ss >> loc.returnPath;
-            ss >> loc.returnCode;
-            if (!loc.returnCode)
-                loc.returnCode = 301;
+            std::string path;
+            int code = 0;
+
+            ss >> path;
+            ss >> code;
+
+            if (code == 0)
+                code = 302;
+
+            if (code < 300 || code >= 400)
+                throw ConfigError("redirect: invalid status code");
+
+            if (!isAbsoluteURL(path) && path[0] != '/')
+                throw ConfigError("redirect: invalid URL (must be absolute or start with /)");
+
+            loc.returnPath = path;
+            loc.returnCode = code;
         }
         else if (token == "default_file") loc.defaultFile = value;
         else if (token == "cgi_extension") loc.cgiExtension = value;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/15 19:21:59 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/16 10:18:20 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,6 +72,20 @@ std::string HttpResponseBuilder::generateAutoindexHTML(const std::string &dirPat
     return oss.str();
 }
 
+std::string HttpResponseBuilder::reasonRedirect(int code)
+{
+    switch (code)
+    {
+        case 301: return "Moved Permanently";
+        case 302: return "Found";
+        case 303: return "See Other";
+        case 307: return "Temporary Redirect";
+        case 308: return "Permanent Redirect";
+        default:  return "Redirect";
+    }
+}
+
+
 std::string HttpResponseBuilder::buildResponse(
     const HttpRequest &req,
     const ServerConfig &serverConf,
@@ -108,13 +122,15 @@ std::string HttpResponseBuilder::buildResponse(
         // =====================================================
         // 🔹 GESTION REDIRECT
         // =====================================================
-        if (!locationConf.path.empty() && !locationConf.returnPath.empty() && locationConf.returnCode >= 300 && locationConf.returnCode < 400)
+        if (!locationConf.returnPath.empty() && locationConf.returnCode >= 300 && locationConf.returnCode < 400)
         {
             std::ostringstream resp;
-            resp << "HTTP/1.0 " << locationConf.returnCode << " Moved Permanently\r\n";
+
+            resp << "HTTP/1.1 " << locationConf.returnCode << " " << reasonRedirect(locationConf.returnCode) << "\r\n";
             resp << "Location: " << locationConf.returnPath << "\r\n";
             resp << "Content-Length: 0\r\n";
             resp << "Connection: close\r\n\r\n";
+
             return resp.str();
         }
 

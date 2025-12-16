@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/09 15:17:51 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 10:17:22 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,7 @@ class HttpResponseBuilder
 
         static std::string parseCGIStatusFromHeaders(const std::string &headers);
         static std::string generateAutoindexHTML(const std::string &dirPath, const std::string &uri);
+        static std::string reasonRedirect(int code);
         
         std::string buildResponse(const HttpRequest &req, const ServerConfig &serverConf, const LocationConfig &locationConf);
 };

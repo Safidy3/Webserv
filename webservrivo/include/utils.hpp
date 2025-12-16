@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: safandri <safandri@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/29 16:22:27 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/13 13:37:29 by safandri         ###   ########.fr       */
+/*   Updated: 2025/12/16 10:40:54 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ bool isPathInsideRoot(const std::string &root, const std::string &target, std::s
 bool checkClientMaxBodySize(size_t contentLength, size_t clientMaxBodySize);
 std::string ftTrim(const std::string &s);
 std::string dechunkBody(const std::string &chunkedBody);
+bool isAbsoluteURL(const std::string &p);
 
 bool isCgiRequest(const HttpRequest &req, const LocationConfig &locationConf, std::string &cgiPath);
 std::string resolveFilePath(const HttpRequest &req, const ServerConfig &serverConf, const LocationConfig &locationConf);

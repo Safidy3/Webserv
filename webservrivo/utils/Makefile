@@ -6,13 +6,14 @@
 #    By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/03/22 08:39:35 by rhanitra          #+#    #+#              #
-#    Updated: 2025/12/11 15:43:46 by rivoinfo         ###   ########.fr        #
+#    Updated: 2025/12/16 10:41:10 by rivoinfo         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 UTILS = ftToInt.cpp ftReadFile.cpp ftSplitStr.cpp ftStrdup.cpp \
 	extractFileContent.cpp extractFilename.cpp splitParts.cpp \
-	appendToCSV.cpp extractFieldName.cpp httpUtils.cpp ftTrim.cpp
+	appendToCSV.cpp extractFieldName.cpp httpUtils.cpp ftTrim.cpp \
+	isAbsoluteURL.cpp
 		
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
