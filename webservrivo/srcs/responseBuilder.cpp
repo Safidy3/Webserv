@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 10:18:20 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 14:36:07 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,9 +145,12 @@ std::string HttpResponseBuilder::buildResponse(
             std::string cgiOutput;
             try {
                 cgiOutput = cgi.execute();
+            } catch (const CgiTimeout &e) {
+                return HandleErrors::generateErrorResponse(408, serverConf, &locationConf);
             } catch (const std::exception &e) {
                 return HandleErrors::generateErrorResponse(500, serverConf, &locationConf);
             }
+
 
             size_t pos = cgiOutput.find("\r\n\r\n");
             if (pos != std::string::npos) {

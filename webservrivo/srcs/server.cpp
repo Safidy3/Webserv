@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/15 18:56:03 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:20:51 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -569,6 +569,8 @@ void Server::handleClientData(size_t index)
 
 void Server::run()
 {
+    ServerConfig defaultServerConf;
+
     while (true)
     {
         int poll_count = poll(_fds.data(), _fds.size(), 1000);
@@ -607,16 +609,19 @@ void Server::run()
             ClientState &st = _clients[fd];
             if (st.lastActivity != 0 && now - st.lastActivity > CLIENT_IDLE_TIMEOUT_SEC) {
                 std::cout << "Closing idle client " << fd << " after " << (now - st.lastActivity) << "s\n";
+                std::string resp = HandleErrors::generateErrorResponse(408, defaultServerConf, NULL);
+                send(fd, resp.c_str(), resp.size(), 0);
                 closeClient(i);
                 continue;
             }
             if (st.createdAt != 0 && now - st.createdAt > CLIENT_TOTAL_TIMEOUT_SEC) {
                 std::cout << "Closing client " << fd << " due to total timeout\n";
+                std::string resp = HandleErrors::generateErrorResponse(408, defaultServerConf, NULL);
+                send(fd, resp.c_str(), resp.size(), 0);
                 closeClient(i);
                 continue;
             }
         }
-
     }
 }
 

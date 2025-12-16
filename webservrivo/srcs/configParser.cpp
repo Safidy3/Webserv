@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 11:50:31 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 16:38:04 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,17 +136,145 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
     }
 }
 
+std::string ConfigParser::readLineDirective(std::istream &input, const std::string &name)
+{
+    std::string line;
+    std::getline(input, line);
+
+    size_t start = line.find_first_not_of(" \t");
+    size_t end   = line.find_last_not_of(" \t");
+
+    if (start == std::string::npos)
+        throw std::runtime_error(name + ": missing value");
+
+    line = line.substr(start, end - start + 1);
+
+    if (line.empty() || line[line.size() - 1] != ';')
+        throw std::runtime_error("Missing ';' after " + name);
+
+    line.erase(line.size() - 1); // remove ';'
+    return line;
+}
+
+
+
 void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
 {
+    std::string token;
+
+    while (input >> token)
+    {
+        if (token == "}")
+            break;
+
+        if (token == "listen")
+        {
+            std::string addr = readLineDirective(input, "listen");
+
+            size_t colon = addr.find(':');
+            if (colon != std::string::npos)
+            {
+                server.host = addr.substr(0, colon);
+                server.listenPort = ftToInt(addr.substr(colon + 1));
+            }
+            else
+            {
+                server.host = "0.0.0.0";
+                server.listenPort = ftToInt(addr);
+            }
+        }
+        else if (token == "server_name")
+        {
+            std::string line = readLineDirective(input, "server_name");
+            std::stringstream ss(line);
+            std::string name;
+
+            while (ss >> name)
+                server.serverNames.push_back(name);
+        }
+        else if (token == "root")
+        {
+            std::string value = readLineDirective(input, "root");
+            server.root = value;
+        }
+        else if (token == "index")
+        {
+            std::string line = readLineDirective(input, "index");
+            std::stringstream ss(line);
+            std::string file;
+
+            while (ss >> file)
+                server.indexFiles.push_back(file);
+        }
+        else if (token == "client_max_body_size")
+        {
+            std::string value = readLineDirective(input, "client_max_body_size");
+
+            char unit = value[value.size() - 1];
+            size_t multiplier = 1;
+
+            if (unit == 'K' || unit == 'k')
+            {
+                multiplier = 1024;
+                value.erase(value.size() - 1);
+            }
+            else if (unit == 'M' || unit == 'm')
+            {
+                multiplier = 1024 * 1024;
+                value.erase(value.size() - 1);
+            }
+            else if (unit == 'G' || unit == 'g')
+            {
+                multiplier = 1024 * 1024 * 1024;
+                value.erase(value.size() - 1);
+            }
+
+            server.clientMaxBodySize = ftToInt(value) * multiplier;
+        }
+        else if (token == "error_page")
+        {
+            std::string line = readLineDirective(input, "error_page");
+            std::stringstream ss(line);
+            std::string codeStr, path;
+
+            ss >> codeStr >> path;
+            server.errorPages[ftToInt(codeStr)] = path;
+        }
+        else if (token == "location")
+        {
+            LocationConfig loc;
+            input >> loc.path;
+
+            std::string brace;
+            input >> brace;
+            if (brace != "{")
+                throw std::runtime_error("Expected '{' after location path");
+
+            parseLocationBlock(input, loc);
+            server.locations.push_back(loc);
+        }
+        else
+        {
+            throw std::runtime_error("Unknown directive in server block: " + token);
+        }
+    }
+}
+
+/*void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
+{
+
     std::string token;
     while (input >> token)
     {
         if (token == "}") break;
 
+
         if (token == "listen")
         {
             std::string addr;
-            std::getline(input, addr, ';');
+            std::getline(input, addr, '\n');
+
+            std::cerr  << addr << std::endl;
 
             size_t start = addr.find_first_not_of(" \t");
             size_t end   = addr.find_last_not_of(" \t");
@@ -230,7 +358,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         }
         else throw std::runtime_error("Unknown directive in server block: " + token);
     }
-}
+}*/
 
 void ConfigParser::parseHttpBlock(std::istream &input, HttpConfig &httpConfig)
 {

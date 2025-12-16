@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:48:25 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/27 16:18:38 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 14:35:22 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,18 +171,13 @@ std::string HandleCGI::execute()
             long elapsed = (tv_now.tv_sec - tv_start.tv_sec) * 1000L + (tv_now.tv_usec - tv_start.tv_usec) / 1000L;
             int remaining = timeoutMs - static_cast<int>(elapsed);
             if (remaining <= 0) {
-                // timeout: kill child and cleanup
                 std::cerr << "CGI timeout: killing child pid " << pid << std::endl;
                 kill(pid, SIGKILL);
-                // close fds to break reads
                 close(fd_out);
                 close(fd_err);
-                // reap child
-                int status = 0;
-                waitpid(pid, &status, 0);
-                throw std::runtime_error("handleCGI: child timed out");
+                waitpid(pid, NULL, 0);
+                throw CgiTimeout();
             }
-
             int ret = poll(fds, 2, remaining);
             if (ret < 0) {
                 if (errno == EINTR) continue;

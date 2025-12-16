@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:47:11 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/11/27 13:27:34 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 14:34:10 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 #include "httpRequest.hpp"
 #include "httpConfig.hpp"
+#include "CgiTimeout.hpp"
 #include "utils.hpp"
 #include <string>
 #include <map>
