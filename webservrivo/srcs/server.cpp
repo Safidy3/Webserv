@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 13:20:51 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 17:54:54 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,7 +157,7 @@ void Server::handleMultipartUpload(const HttpRequest &req, const std::string &ra
     std::string body = rawRequest.substr(rawRequest.find("\r\n\r\n") + 4);
     std::string delimiter = "--" + boundary;
 
-    std::vector<std::string> parts = splitParts(body, delimiter);
+    std::vector<std::string> parts = ftSplit(body, delimiter);
 
     std::map<std::string, std::string> fields;
     std::string uploadedFilename;

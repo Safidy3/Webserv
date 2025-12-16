@@ -3,17 +3,16 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+         #
+#    By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/03/22 08:39:35 by rhanitra          #+#    #+#              #
-#    Updated: 2025/12/16 10:41:10 by rivoinfo         ###   ########.fr        #
+#    Updated: 2025/12/16 18:19:21 by rhanitra         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-UTILS = ftToInt.cpp ftReadFile.cpp ftSplitStr.cpp ftStrdup.cpp \
-	extractFileContent.cpp extractFilename.cpp splitParts.cpp \
+UTILS = ftToInt.cpp ftReadFile.cpp ftStrdup.cpp isAbsoluteURL.cpp \
+	extractFileContent.cpp extractFilename.cpp ftSplit.cpp normalizeSpaces.cpp \
 	appendToCSV.cpp extractFieldName.cpp httpUtils.cpp ftTrim.cpp \
-	isAbsoluteURL.cpp
 		
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 

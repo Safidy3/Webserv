@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   httpConfig.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 13:30:58 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 16:32:10 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 17:57:44 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,7 +82,7 @@ class ConfigParser
         void parseHttpBlock(std::istream &input, HttpConfig &httpConfig);
         void parseServerBlock(std::istream &input, ServerConfig &config);
         void parseLocationBlock(std::istream &input, LocationConfig &loc);
-        std::string readLineDirective(std::istream &input, const std::string &name);
+        void findBackSlashN(const std::string &line);
 
     public:
         ConfigParser(const std::string &_configFilePath, const std::string &mimeTypesPath);

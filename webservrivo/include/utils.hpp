@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/29 16:22:27 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 10:40:54 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/16 18:20:04 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,9 +42,8 @@ std::string ftStrdup(const char* s);
 bool file_exists(const std::string &path);
 std::string ftReadFile(const std::string &path);
 bool file_is_redable(const std::string& nomFichier);
-
-std::vector<std::string> ftSplitStr(const std::string& str, const std::string& delimiter);
-std::vector<std::string> splitParts(const std::string &body, const std::string &delimiter);
+std::string normalizeSpaces(const std::string &line);
+std::vector<std::string> ftSplit(const std::string &input, const std::string &delimiter);
 std::string extractFilename(const std::string &part);
 std::string extractFileContent(const std::string &part);
 void appendToCSV(const std::map<std::string, std::string> &fields, const std::string &csvPath, const std::string &uploadedFileName);
