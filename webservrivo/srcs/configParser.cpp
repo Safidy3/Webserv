@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   configParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 18:36:02 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/17 15:31:25 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,37 +136,103 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
     }
 }
 
-void ConfigParser::findBackSlashN(const std::string &line)
+void ConfigParser::formalizeSpaces(std::string &line)
 {
-    std::vector<std::string> parts = ftSplit(line, ";");
-    
-    for (std::vector<std::string>::iterator it = parts.begin(); it != parts.end(); ++it)
+    bool lastWasSpace = true;
+
+    for (std::string::iterator it = line.begin(); it != line.end();)
     {
-        if (it->find('\n') != std::string::npos)
+        if (*it == '\n')
         {
-            throw std::runtime_error("Error with missing ';'");
+            lastWasSpace = true;
+            ++it;
+        }
+        else if (*it == ' ' || *it == '\t')
+        {
+            if (lastWasSpace)
+            {
+                it = line.erase(it);
+            }
+            else
+            {
+                lastWasSpace = true;
+                ++it;
+            }
+        }
+        else
+        {
+            lastWasSpace = false;
+            ++it;
         }
     }
 }
 
+void ConfigParser::findMissingSemicolon(std::string &line)
+{
+    int braceCount = 0;
+
+    for (std::string::iterator it = line.begin(); it != line.end(); ++it)
+    {
+        if (*it == '{')
+            braceCount++;
+        else if (*it == '}')
+        {
+            braceCount--;
+            if (braceCount < 0)
+                throw std::runtime_error("Error: unexpected '}'");
+        }
+
+        if (*it == '\n')
+        {
+            std::string::iterator prev = it;
+
+            if (prev == line.begin())
+                continue;
+
+            --prev;
+
+            while (prev != line.begin() && (*prev == ' ' || *prev == '\t'))
+                --prev;
+
+            if (*prev == '\n')
+                continue;
+
+            if (*prev == ';' || *prev == '{' || *prev == '}')
+                continue;
+
+            throw std::runtime_error("Error: missing ';'");
+        }
+    }
+
+    if (braceCount != 0)
+        throw std::runtime_error("Error: unclosed '{'");
+}
+
+
 
 void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
-{
+{    
+    std::stringstream buffer;
+    buffer << input.rdbuf();
+    std::string content = buffer.str();
+
+    std::string tmp = content;
+    formalizeSpaces(tmp);
+    findMissingSemicolon(tmp);
+
+    std::istringstream parser(content);
     std::string token;
-    while (input >> token)
+    
+    while (parser >> token)
     {
        
-        if (token == "}") break;
-        
-        std::stringstream ss;
-        ss << input.rdbuf();
-        std::string all = ss.str();
-        findBackSlashN(all);
+        if (token == "}") 
+            break;
 
         if (token == "listen")
         {
             std::string addr;
-            std::getline(input, addr, ';');
+            std::getline(parser, addr, ';');
 
             size_t start = addr.find_first_not_of(" \t");
             size_t end   = addr.find_last_not_of(" \t");
@@ -187,7 +253,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "server_name")
         {
             std::string line;
-            std::getline(input, line, ';');
+            std::getline(parser, line, ';');
             std::stringstream ss(line);
             std::string name;
 
@@ -197,7 +263,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "root")
         {
             std::string value;
-            std::getline(input, value, ';');
+            std::getline(parser, value, ';');
             size_t start = value.find_first_not_of(" \t");
             size_t end   = value.find_last_not_of(" \t");
             if (start != std::string::npos) value = value.substr(start, end - start + 1);
@@ -206,7 +272,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "index")
         {
             std::string line;
-            std::getline(input, line, ';');
+            std::getline(parser, line, ';');
             std::stringstream ss(line);
             std::string file;
 
@@ -216,7 +282,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "client_max_body_size")
         {
             std::string value;
-            std::getline(input, value, ';');
+            std::getline(parser, value, ';');
             size_t start = value.find_first_not_of(" \t");
             size_t end   = value.find_last_not_of(" \t");
             if (start != std::string::npos) value = value.substr(start, end - start + 1);
@@ -232,7 +298,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "error_page")
         {
             std::string line;
-            std::getline(input, line, ';');
+            std::getline(parser, line, ';');
             std::stringstream ss(line);
             std::string codeStr, path;
             ss >> codeStr >> path;
@@ -242,11 +308,11 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "location")
         {
             LocationConfig loc;
-            input >> loc.path;
+            parser >> loc.path;
             std::string brace;
-            input >> brace;
+            parser >> brace;
             if (brace != "{") throw std::runtime_error("Expected '{' after location path");
-            parseLocationBlock(input, loc);
+            parseLocationBlock(parser, loc);
             server.locations.push_back(loc);
         }
         else throw std::runtime_error("Unknown directive in server block: " + token);
