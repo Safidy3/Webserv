@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   httpConfig.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 13:30:58 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/17 15:31:21 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/17 18:13:51 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,7 +83,9 @@ class ConfigParser
         void parseServerBlock(std::istream &input, ServerConfig &config);
         void parseLocationBlock(std::istream &input, LocationConfig &loc);
         void formalizeSpaces(std::string &line);
-        void findMissingSemicolon(std::string &line); 
+        void findMissingSemicolon(const std::string &text);
+        void checkBraces(const std::string &text);
+        void eraseClosingBraces(std::string &s);
 
     public:
         ConfigParser(const std::string &_configFilePath, const std::string &mimeTypesPath);

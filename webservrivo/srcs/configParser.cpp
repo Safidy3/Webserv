@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   configParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/17 15:31:25 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/17 18:14:06 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,6 +136,7 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
     }
 }
 
+
 void ConfigParser::formalizeSpaces(std::string &line)
 {
     bool lastWasSpace = true;
@@ -167,11 +168,39 @@ void ConfigParser::formalizeSpaces(std::string &line)
     }
 }
 
-void ConfigParser::findMissingSemicolon(std::string &line)
+void ConfigParser::findMissingSemicolon(const std::string &text)
+{
+    for (std::string::const_iterator it = text.begin(); it != text.end(); ++it)
+    {
+        if (*it != '\n')
+            continue;
+
+        std::string::const_iterator prev = it;
+
+        if (prev == text.begin())
+            continue;
+
+        --prev;
+
+        while (prev != text.begin() && (*prev == ' ' || *prev == '\t'))
+            --prev;
+
+        if (*prev == '\n')
+            continue;
+
+        if (*prev == ';' || *prev == '{' || *prev == '}')
+            continue;
+
+        throw std::runtime_error("Error: missing ';'");
+    }
+}
+
+void ConfigParser::checkBraces(const std::string &text)
 {
     int braceCount = 0;
+    int line = 1;
 
-    for (std::string::iterator it = line.begin(); it != line.end(); ++it)
+    for (std::string::const_iterator it = text.begin(); it != text.end(); ++it)
     {
         if (*it == '{')
             braceCount++;
@@ -179,35 +208,47 @@ void ConfigParser::findMissingSemicolon(std::string &line)
         {
             braceCount--;
             if (braceCount < 0)
-                throw std::runtime_error("Error: unexpected '}'");
+            {
+                std::ostringstream oss;
+                oss << line;
+                throw std::runtime_error(
+                    "Error: unexpected '}' at line " + oss.str());
+            }
         }
 
         if (*it == '\n')
-        {
-            std::string::iterator prev = it;
-
-            if (prev == line.begin())
-                continue;
-
-            --prev;
-
-            while (prev != line.begin() && (*prev == ' ' || *prev == '\t'))
-                --prev;
-
-            if (*prev == '\n')
-                continue;
-
-            if (*prev == ';' || *prev == '{' || *prev == '}')
-                continue;
-
-            throw std::runtime_error("Error: missing ';'");
-        }
+            line++;
     }
 
     if (braceCount != 0)
         throw std::runtime_error("Error: unclosed '{'");
 }
 
+void ConfigParser::eraseClosingBraces(std::string &s)
+{
+    while (!s.empty() &&
+          (s[s.size() - 1] == ' ' ||
+           s[s.size() - 1] == '\n' ||
+           s[s.size() - 1] == '\t'))
+    {
+        s.erase(s.size() - 1);
+    }
+
+    while (!s.empty() && s[s.size() - 1] == '}')
+    {
+        s.erase(s.size() - 1);
+
+        while (!s.empty() &&
+              (s[s.size() - 1] == ' ' ||
+               s[s.size() - 1] == '\n' ||
+               s[s.size() - 1] == '\t'))
+        {
+            s.erase(s.size() - 1);
+        }
+    }
+    s += '\n';
+    s += '}';
+}
 
 
 void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
@@ -215,9 +256,10 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
     std::stringstream buffer;
     buffer << input.rdbuf();
     std::string content = buffer.str();
-
+    
     std::string tmp = content;
     formalizeSpaces(tmp);
+    eraseClosingBraces(tmp);
     findMissingSemicolon(tmp);
 
     std::istringstream parser(content);
