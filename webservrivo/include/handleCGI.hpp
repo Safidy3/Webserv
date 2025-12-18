@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:47:11 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 14:34:10 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 08:08:10 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,22 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+
+// Structure pour tracker un CGI en cours
+struct CGIProcess {
+    pid_t pid;
+    int pipe_out;
+    int pipe_err;
+    std::string output;
+    std::string error;
+    bool out_eof;
+    bool err_eof;
+    time_t startTime;
+    int timeoutMs;
+    
+    CGIProcess() : pid(-1), pipe_out(-1), pipe_err(-1), output(), error(), 
+                   out_eof(false), err_eof(false), startTime(0), timeoutMs(10000) {}
+};
 
 class HandleCGI
 {
@@ -41,6 +57,12 @@ class HandleCGI
         void buildEnv();
         std::vector<std::string> buildEnvStrings() const;
         std::string execute();
+        
+        // Asynchrone version - starts CGI without waiting
+        CGIProcess* executeAsync();
+        
+        // Helper to read from CGI pipes
+        static std::string readCGIOutput(CGIProcess *cgiProc);
 };
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:40:36 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/07 15:12:48 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/18 08:09:49 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,9 @@ int main(int argc, char **argv)
     try
     {
         // Ignorer SIGPIPE pour éviter les crash lors de send()
+        // Ignorer SIGCHLD - on va utiliser waitpid(WNOHANG) au lieu de handler
         signal(SIGPIPE, SIG_IGN);
+        signal(SIGCHLD, SIG_IGN);
         signal(SIGINT, handle_sigint);
 
         ConfigParser parser(configPath, mimeTypesPath);

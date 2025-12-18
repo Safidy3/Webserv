@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 17:54:54 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/18 09:16:20 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/httpServer.hpp"
 #include "../include/httpResponse.hpp"
 #include "../include/httpConfig.hpp"
+#include "../include/handleCGI.hpp"
 #include <limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -37,14 +38,14 @@ Server::~Server()
 
 void Server::setupListeningSockets()
 {
-    // Grouper les serveurs par (host, port) pour créer UNE socket par endpoint
+    // Group servers by (host, port) to create ONE socket per endpoint
     std::map<std::pair<std::string, int>, std::vector<size_t> > serversByEndpoint;
     for (size_t i = 0; i < _config.servers.size(); ++i) {
         std::pair<std::string, int> endpoint(_config.servers[i].host, _config.servers[i].listenPort);
         serversByEndpoint[endpoint].push_back(i);
     }
     
-    // Pour chaque endpoint unique, créer une socket et y ajouter tous les serveurs
+    // For each unique endpoint, create a socket and add all servers to it
     for (std::map<std::pair<std::string, int>, std::vector<size_t> >::iterator it = serversByEndpoint.begin();
          it != serversByEndpoint.end(); ++it) {
         const std::pair<std::string, int> &endpoint = it->first;
@@ -86,7 +87,7 @@ void Server::setupListeningSockets()
         pfd.revents = 0;
         _fds.push_back(pfd);
 
-        // Ajouter TOUS les serveurs de cet endpoint
+        // Add ALL servers of this endpoint
         for (size_t j = 0; j < serverIndices.size(); ++j) {
             _listenSockets[sock].push_back(&_config.servers[serverIndices[j]]);
         }
@@ -104,7 +105,7 @@ void Server::handleNewConnection(size_t index)
         std::cerr << "Error: accept failed (errno=" << errno << ")\n";
         return;
     }
-    // set client socket non-blocking
+    // Set client socket to non-blocking
     int flags = fcntl(client_sock, F_GETFL, 0);
     fcntl(client_sock, F_SETFL, flags | O_NONBLOCK);
     struct pollfd client_pfd;
@@ -113,20 +114,20 @@ void Server::handleNewConnection(size_t index)
     client_pfd.revents = 0;
     _fds.push_back(client_pfd);
         _clientSockets.push_back(client_sock);
-    // initialize client parsing state
+    // Initialize client parsing state
         _clients[client_sock] = ClientState();
         time_t now = time(NULL);
         _clients[client_sock].lastActivity = now;
         _clients[client_sock].createdAt = now;
 
-        // Stocker le socket d'écoute pour choisir le serveur plus tard
-        // On va stocker l'index du fd d'écoute dans une map temporaire
-        // pour retrouver la liste des serveurs possibles
+        // Store the listening socket to select the server later
+        // We will store the listening fd index in a temporary map
+        // to retrieve the list of possible servers
         if (_listenSockets.count(_fds[index].fd)) {
-            // On ne choisit pas le serveur maintenant
-            // On laissera handleClientData() le faire selon le header Host:
-            _clientToServer[client_sock] = NULL;  // À déterminer plus tard
-            _clientToListenSocket[client_sock] = _fds[index].fd;  // Stocker le listen fd
+            // We don't select the server now
+            // handleClientData() will do it based on Host: header
+            _clientToServer[client_sock] = NULL;  // To be determined later
+            _clientToListenSocket[client_sock] = _fds[index].fd;  // Store listen fd
             std::cout << "New client " << client_sock 
                       << " connected (server selection pending Host: header)\n";
         } else {
@@ -229,89 +230,56 @@ void Server::saveUploadedFile(const std::string &uploadDir,
     out.close();
 }
 
-void Server::handleClientData(size_t index)
+// Select the appropriate server for a client based on Host header
+bool Server::selectServerForClient(int client_fd, const ClientState &state)
 {
-   int client_fd = _fds[index].fd;
-    char buffer[BUFFER_SIZE];
+    if (_clientToListenSocket.count(client_fd) == 0)
+        return false;
 
-    ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
-    if (received <= 0) {
-        if (received < 0) closeClient(index);
-        return;
+    int listen_fd = _clientToListenSocket[client_fd];
+    const std::vector<const ServerConfig*> &candidates = _listenSockets[listen_fd];
+
+    std::string requestHost;
+    size_t hostPos = state.readBuffer.find("Host:");
+    if (hostPos != std::string::npos) {
+        size_t hostStart = hostPos + 5;
+        while (hostStart < state.readBuffer.size() && (state.readBuffer[hostStart] == ' ' || state.readBuffer[hostStart] == '\t'))
+            hostStart++;
+        size_t hostEnd = state.readBuffer.find("\r\n", hostStart);
+        if (hostEnd != std::string::npos) {
+            requestHost = state.readBuffer.substr(hostStart, hostEnd - hostStart);
+            size_t colonPos = requestHost.find(':');
+            if (colonPos != std::string::npos)
+                requestHost = requestHost.substr(0, colonPos);
+        }
     }
 
-    ClientState &state = _clients[client_fd];
-    state.readBuffer.append(buffer, received);
-    state.lastActivity = time(NULL);
+    const ServerConfig* selectedServer = NULL;
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        const ServerConfig *conf = candidates[i];
+        for (size_t j = 0; j < conf->serverNames.size(); ++j) {
+            if (conf->serverNames[j] == requestHost) {
+                selectedServer = conf;
+                break;
+            }
+        }
+        if (selectedServer) break;
+    }
 
-    //* BODY CHECKING BEFORE PARSING
+    if (!selectedServer && !candidates.empty())
+        selectedServer = candidates[0];
+
+    if (!selectedServer) return false;
+
+    _clientToServer[client_fd] = selectedServer;
+    return true;
+}
+
+// Validate body size and parse the HTTP request
+bool Server::validateAndParseRequest(int client_fd, ClientState &state, HttpRequest &req, const ServerConfig *serverConf)
+{
+    // Check if complete body is received (Content-Length or chunked)
     size_t hdrEnd = state.readBuffer.find("\r\n\r\n");
-    if (hdrEnd != std::string::npos) {
-        size_t bodyStart = hdrEnd + 4;
-        size_t bodyBytes = (state.readBuffer.size() > bodyStart)
-                           ? state.readBuffer.size() - bodyStart
-                           : 0;
-        state.receivedBody = bodyBytes;
-
-        const ServerConfig* serverConfTmp = _clientToServer[client_fd];
-        size_t maxBody = serverConfTmp ? serverConfTmp->clientMaxBodySize : 0;
-
-        if (maxBody > 0 && state.receivedBody > maxBody) {
-            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
-            
-            return;
-        }
-    }
-
-    //* Check if assigned server
-    if (!_clientToServer[client_fd]) {
-        if (_clientToListenSocket.count(client_fd) == 0)
-            return;
-
-        int listen_fd = _clientToListenSocket[client_fd];
-        const std::vector<const ServerConfig*> &candidates = _listenSockets[listen_fd];
-
-        std::string requestHost;
-        size_t hostPos = state.readBuffer.find("Host:");
-        if (hostPos != std::string::npos) {
-            size_t hostStart = hostPos + 5;
-            while (hostStart < state.readBuffer.size() && (state.readBuffer[hostStart] == ' ' || state.readBuffer[hostStart] == '\t'))
-                hostStart++;
-            size_t hostEnd = state.readBuffer.find("\r\n", hostStart);
-            if (hostEnd != std::string::npos) {
-                requestHost = state.readBuffer.substr(hostStart, hostEnd - hostStart);
-                size_t colonPos = requestHost.find(':');
-                if (colonPos != std::string::npos)
-                    requestHost = requestHost.substr(0, colonPos);
-            }
-        }
-
-        const ServerConfig* selectedServer = NULL;
-        std::string matchedName;
-        for (size_t i = 0; i < candidates.size(); ++i) {
-            const ServerConfig *conf = candidates[i];
-            for (size_t j = 0; j < conf->serverNames.size(); ++j) {
-                if (conf->serverNames[j] == requestHost) {
-                    selectedServer = conf;
-                    matchedName = conf->serverNames[j];
-                    break;
-                }
-            }
-            if (selectedServer) break;
-        }
-
-        if (!selectedServer && !candidates.empty())
-            selectedServer = candidates[0];
-
-        if (!selectedServer) return;
-
-        _clientToServer[client_fd] = selectedServer;
-    }
-
-    const ServerConfig *serverConf = _clientToServer[client_fd];
-    if (!serverConf) return;
-
-    // Vérifier si le body complet est reçu (Content-Length ou chunked)
     size_t contentLen = 0;
     size_t contentLenPos = state.readBuffer.find("Content-Length:");
     if (contentLenPos != std::string::npos) {
@@ -324,10 +292,10 @@ void Server::handleClientData(size_t index)
 
     if (contentLenPos != std::string::npos) {
         size_t bodyLen = state.readBuffer.size() - (hdrEnd + 4);
-        if (bodyLen < contentLen) return; // attendre le reste
+        if (bodyLen < contentLen) return false;  // Wait for more data
     }
 
-    // gérer chunked si nécessaire
+    // Handle chunked encoding if necessary
     bool isChunked = false;
     size_t tePos = state.readBuffer.find("Transfer-Encoding:");
     if (tePos != std::string::npos) {
@@ -338,94 +306,47 @@ void Server::handleClientData(size_t index)
 
     if (isChunked) {
         size_t zeroChunkPos = state.readBuffer.find("\r\n0\r\n", hdrEnd + 4);
-        if (zeroChunkPos == std::string::npos) return; // attendre le reste
+        if (zeroChunkPos == std::string::npos) return false;  // Wait for more data
         std::string chunkedBody = state.readBuffer.substr(hdrEnd + 4);
         std::string dechunked = dechunkBody(chunkedBody);
         if (dechunked.empty() && !chunkedBody.empty()) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, NULL));
             state.readBuffer.clear();
-            return;
+            return false;
         }
         if (serverConf->clientMaxBodySize > 0 && dechunked.size() > serverConf->clientMaxBodySize) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, NULL));
             state.readBuffer.clear();
-            return;
+            return false;
         }
         std::string headers = state.readBuffer.substr(0, hdrEnd + 4);
         state.readBuffer = headers + dechunked;
     }
 
-    // On peut maintenant parser la requête
+    // Parse the request
     HttpRequestParser parser;
-    HttpRequest req;
     try {
         req = parser.parseRequest(state.readBuffer);
         if (req.httpVersion != "HTTP/1.0" && req.httpVersion != "HTTP/1.1") {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(505, *serverConf, NULL));
-            return;
+            return false;
         }
-
     } catch (...) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, NULL));
         state.readBuffer.clear();
-        return;
+        return false;
     }
 
-    // 🔹 Trouver la meilleure location
-    const LocationConfig* locationConf = NULL;
-    size_t bestMatchLen = 0;
-    for (size_t i = 0; i < serverConf->locations.size(); ++i) {
-        const LocationConfig &loc = serverConf->locations[i];
-        if (req.uri.find(loc.path) == 0 && loc.path.size() > bestMatchLen) {
-            locationConf = &loc;
-            bestMatchLen = loc.path.size();
-        }
-    }
+    return true;
+}
 
-    // fallback si aucune location spécifique trouvée
-    if (!locationConf && !serverConf->locations.empty())
-        locationConf = &serverConf->locations[0];
-
-    // Enforcer client_max_body_size (après détermination de la location)
-    if (checkClientMaxBodySize(req.contentLength, serverConf->clientMaxBodySize)) {
-        queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
-        return;
-    }
-
-   // 🔹 Vérifier méthode autorisée (sans fallback par défaut)
-    std::set<std::string> allowed;
-    if (locationConf && !locationConf->methods.empty()) {
-        allowed.insert(locationConf->methods.begin(), locationConf->methods.end());
-    }
-
-    // Vérifier que la méthode est valide (non vide)
-    if (req.method.empty()) {
-        queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, locationConf));
-        return;
-    }
-
-    if (allowed.find(req.method) == allowed.end()) {
-        std::string allowHeader;
-        if (!allowed.empty()) {
-            allowHeader = "Allow: ";
-            bool first = true;
-            for (std::set<std::string>::const_iterator it = allowed.begin(); it != allowed.end(); ++it) {
-                if (!first) allowHeader += ", ";
-                allowHeader += *it;
-                first = false;
-            }
-            allowHeader += "\r\n";
-        }
-        queueResponse(client_fd, HandleErrors::generateErrorResponse(405, *serverConf, locationConf, allowHeader));
-        return;
-    }
-
-
+// Handle DELETE and POST (multipart) requests
+bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const ServerConfig *serverConf, const LocationConfig *locationConf)
+{
     if (req.method == "POST") {
-        std::string contentType = req.headers["Content-Type"];
+        std::string contentType = req.headers.count("Content-Type") ? req.headers.at("Content-Type") : "";
         if (contentType.find("multipart/form-data") != std::string::npos) {
-
-            // Déterminer la racine d'upload
+            // Determine upload root
             std::string uploadRoot;
             if (locationConf && !locationConf->uploadDir.empty())
                 uploadRoot = locationConf->uploadDir;
@@ -434,13 +355,12 @@ void Server::handleClientData(size_t index)
             else
                 uploadRoot = serverConf->root;
 
-            // Ajouter "/uploads" pour tous les cas
             std::string uploadDir = uploadRoot;
             if (uploadDir[uploadDir.size() - 1] != '/')
                 uploadDir += "/";
             uploadDir += "uploads";
 
-            // Créer le dossier /uploads si nécessaire
+            // Create uploads directory if needed
             struct stat st;
             if (stat(uploadDir.c_str(), &st) == -1) {
                 std::string accum;
@@ -467,53 +387,48 @@ void Server::handleClientData(size_t index)
                 }
             }
 
-            // Appeler le handler multipart avec le bon chemin
-            handleMultipartUpload(req, state.readBuffer, uploadDir, client_fd);
+            // Call the multipart handler
+            std::string rawReq = "";  // Store request for multipart parsing
+            handleMultipartUpload(req, rawReq, uploadDir, client_fd);
 
-            // Ensuite, envoyer une redirection HTTP 303
+            // Send HTTP 303 redirect
             std::ostringstream response;
             response << "HTTP/1.0 303 See Other\r\n";
-            response << "Location: /uploads\r\n"; // ou /uploads/success.html si tu préfères
+            response << "Location: /uploads\r\n";
             response << "Content-Length: 0\r\n";
             response << "Connection: close\r\n\r\n";
 
             send(client_fd, response.str().c_str(), response.str().size(), 0);
-            return;
+            return true;
         }
     }
 
-    if (req.method == "DELETE")
-    {
+    if (req.method == "DELETE") {
         std::string root = (locationConf && !locationConf->root.empty())
                             ? locationConf->root
                             : serverConf->root;
 
         std::string rawRel;
         if (locationConf && !locationConf->path.empty()
-            && req.uri.find(locationConf->path) == 0)
-        {
+            && req.uri.find(locationConf->path) == 0) {
             rawRel = req.uri.substr(locationConf->path.size());
-        }
-        else if (!req.uri.empty() && req.uri[0] == '/')
+        } else if (!req.uri.empty() && req.uri[0] == '/') {
             rawRel = req.uri.substr(1);
-        else
+        } else {
             rawRel = req.uri;
+        }
 
         if (rawRel.empty()) {
-            queueResponse(client_fd,
-                HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
-            return;
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
+            return true;
         }
 
         std::string normRel = normalizeRelativePath(rawRel);
-
         std::string targetPath = root;
 
-        if (locationConf && !locationConf->path.empty()
-            && locationConf->path != "/")
-        {
+        if (locationConf && !locationConf->path.empty() && locationConf->path != "/") {
             std::string locp = locationConf->path;
-            if (locp[0] == '/') locp.erase(0,1);
+            if (locp[0] == '/') locp.erase(0, 1);
             targetPath += "/" + locp;
         }
 
@@ -527,35 +442,163 @@ void Server::handleClientData(size_t index)
         std::string canonTarget;
         if (!isPathInsideRoot(root, targetPath, canonTarget)) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
-            return;
+            return true;
         }
         
         struct stat st;
         if (stat(canonTarget.c_str(), &st) == -1) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(404, *serverConf, locationConf));
-            return;
+            return true;
         }
 
         if (S_ISDIR(st.st_mode)) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
-            return;
+            return true;
         }
 
         if (unlink(canonTarget.c_str()) == -1) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(500, *serverConf, locationConf));
-            return;
+            return true;
         }
 
-        std::string resp =
-            "HTTP/1.0 204 No Content\r\n"
-            "Content-Length: 0\r\n"
-                "Connection: close\r\n\r\n";
+        std::string resp = "HTTP/1.0 204 No Content\r\n"
+                          "Content-Length: 0\r\n"
+                          "Connection: close\r\n\r\n";
+        queueResponse(client_fd, resp);
+        return true;
+    }
 
-            queueResponse(client_fd, resp);
+    return false;  // Not a special method
+}
+
+void Server::handleClientData(size_t index)
+{
+    int client_fd = _fds[index].fd;
+    char buffer[BUFFER_SIZE];
+
+    ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
+    if (received <= 0) {
+        if (received < 0) closeClient(index);
+        return;
+    }
+
+    ClientState &state = _clients[client_fd];
+    state.readBuffer.append(buffer, received);
+    state.lastActivity = time(NULL);
+
+    // Check body size before parsing
+    size_t hdrEnd = state.readBuffer.find("\r\n\r\n");
+    if (hdrEnd != std::string::npos) {
+        size_t bodyStart = hdrEnd + 4;
+        size_t bodyBytes = (state.readBuffer.size() > bodyStart)
+                           ? state.readBuffer.size() - bodyStart
+                           : 0;
+        state.receivedBody = bodyBytes;
+
+        const ServerConfig* serverConfTmp = _clientToServer[client_fd];
+        size_t maxBody = serverConfTmp ? serverConfTmp->clientMaxBodySize : 0;
+
+        if (maxBody > 0 && state.receivedBody > maxBody) {
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
+            return;
+        }
+    }
+
+    // Select the appropriate server for this client
+    if (!_clientToServer[client_fd]) {
+        if (!selectServerForClient(client_fd, state))
             return;
     }
 
+    const ServerConfig *serverConf = _clientToServer[client_fd];
+    if (!serverConf) return;
+
+    // Parse the HTTP request
+    HttpRequest req;
+    if (!validateAndParseRequest(client_fd, state, req, serverConf))
+        return;
+
+    // Find the best matching location
+    const LocationConfig* locationConf = NULL;
+    size_t bestMatchLen = 0;
+    for (size_t i = 0; i < serverConf->locations.size(); ++i) {
+        const LocationConfig &loc = serverConf->locations[i];
+        if (req.uri.find(loc.path) == 0 && loc.path.size() > bestMatchLen) {
+            locationConf = &loc;
+            bestMatchLen = loc.path.size();
+        }
+    }
+
+    // Fallback if no specific location found
+    if (!locationConf && !serverConf->locations.empty())
+        locationConf = &serverConf->locations[0];
+
+    // Check client max body size
+    if (checkClientMaxBodySize(req.contentLength, serverConf->clientMaxBodySize)) {
+        queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
+        return;
+    }
+
+    // Check allowed HTTP methods
+    std::set<std::string> allowed;
+    if (locationConf && !locationConf->methods.empty()) {
+        allowed.insert(locationConf->methods.begin(), locationConf->methods.end());
+    }
+
+    if (req.method.empty()) {
+        queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, locationConf));
+        return;
+    }
+
+    if (allowed.find(req.method) == allowed.end()) {
+        std::string allowHeader;
+        if (!allowed.empty()) {
+            allowHeader = "Allow: ";
+            bool first = true;
+            for (std::set<std::string>::const_iterator it = allowed.begin(); it != allowed.end(); ++it) {
+                if (!first) allowHeader += ", ";
+                allowHeader += *it;
+                first = false;
+            }
+            allowHeader += "\r\n";
+        }
+        queueResponse(client_fd, HandleErrors::generateErrorResponse(405, *serverConf, locationConf, allowHeader));
+        return;
+    }
+
+    // Handle special methods (POST multipart, DELETE)
+    if (handleSpecialMethods(client_fd, req, serverConf, locationConf))
+        return;
+
+    // Handle normal GET requests (and other methods)
     HttpResponseBuilder builder(_mimeTypes);
+    
+    // Check if this is a CGI request - handle asynchronously
+    std::string cgiScript;
+    if (locationConf && isCgiRequest(req, *locationConf, cgiScript))
+    {
+        // Create a copy of locationConf to ensure stability across async handling
+        LocationConfig locCopy = *locationConf;
+        
+        // Don't execute CGI synchronously - queue it for async handling
+        HandleCGI cgi(req, *serverConf, locCopy);
+        cgi.buildEnv();
+        CGIProcess *cgiProc = cgi.executeAsync();
+        
+        if (cgiProc && cgiProc->pid > 0) {
+            // Store the CGI process for tracking
+            _cgiProcesses[client_fd] = cgiProc;
+            _pidToClientFd[cgiProc->pid] = client_fd;
+            std::cout << "Started async CGI process " << cgiProc->pid << " for client " << client_fd << "\n";
+            return;  // Don't send response yet, it will be sent when CGI finishes
+        } else {
+            std::string response = HandleErrors::generateErrorResponse(500, *serverConf, locationConf);
+            queueResponse(client_fd, response);
+            return;
+        }
+    }
+    
+    // Non-CGI requests handled synchronously
     std::string response;
     try {
         response = builder.buildResponse(req, *serverConf, locationConf ? *locationConf : LocationConfig());
@@ -579,6 +622,9 @@ void Server::run()
             std::cerr << "Error: poll failed\n";
             break;
         }
+
+        // Poll and process ongoing CGI processes
+        pollCGIProcesses();
 
         for (int k = static_cast<int>(_fds.size()) - 1; k >= 0; --k)
         {
@@ -706,7 +752,7 @@ void Server::cleanup()
     }
 
     std::cout << "Closing listening sockets...\n";
-    // Fermer les sockets d'écoute
+    // Closing listening sockets
     for (size_t i = 0; i < _fds.size(); ++i)
         ::close(_fds[i].fd);
     _fds.clear();
@@ -715,5 +761,130 @@ void Server::cleanup()
     std::cout << "Server cleanup done.\n";
 }
 
+// Poll CGI processes to check if they've completed
+void Server::pollCGIProcesses()
+{
+    std::vector<int> completedClients;
+    
+    for (std::map<int, CGIProcess*>::iterator it = _cgiProcesses.begin(); 
+         it != _cgiProcesses.end(); ++it) {
+        int client_fd = it->first;
+        CGIProcess *cgiProc = it->second;
+        
+        if (!cgiProc) continue;
+        
+        time_t now = time(NULL);
+        long elapsed = (now - cgiProc->startTime) * 1000;
+        
+        // Check timeout
+        if (elapsed > cgiProc->timeoutMs) {
+            std::cerr << "CGI timeout for client " << client_fd << " (pid " << cgiProc->pid << ")\n";
+            kill(cgiProc->pid, SIGKILL);
+            completedClients.push_back(client_fd);
+            continue;
+        }
+        
+        // Try to read available data
+        HandleCGI::readCGIOutput(cgiProc);
+        
+        // Check if process is still running
+        if (cgiProc->pid > 0) {
+            int status = 0;
+            pid_t result = waitpid(cgiProc->pid, &status, WNOHANG);
+            
+            if (result == cgiProc->pid) {
+                // Process has finished
+                std::cout << "CGI process " << cgiProc->pid << " finished for client " << client_fd << "\n";
+                
+                // Try to read any remaining data
+                HandleCGI::readCGIOutput(cgiProc);
+                
+                // Mark as completed
+                completedClients.push_back(client_fd);
+            } else if (result < 0) {
+                std::cerr << "waitpid error for CGI process\n";
+                completedClients.push_back(client_fd);
+            }
+        }
+    }
+    
+    // Process completed CGI requests
+    for (size_t i = 0; i < completedClients.size(); ++i) {
+        finalizeCGI(completedClients[i], _cgiProcesses[completedClients[i]]);
+    }
+}
+
+// Finalize CGI: send response to client
+void Server::finalizeCGI(int client_fd, CGIProcess *cgiProc)
+{
+    if (!cgiProc) return;
+    
+    // Close pipes
+    if (cgiProc->pipe_out >= 0) close(cgiProc->pipe_out);
+    if (cgiProc->pipe_err >= 0) close(cgiProc->pipe_err);
+    
+    std::string response;
+    
+    // Check for errors
+    if (!cgiProc->error.empty()) {
+        std::cerr << "CGI stderr: " << cgiProc->error << "\n";
+        ServerConfig defaultConf;
+        response = HandleErrors::generateErrorResponse(500, defaultConf, NULL);
+    } else {
+        // Process CGI output
+        std::string &output = cgiProc->output;
+        size_t pos = output.find("\r\n\r\n");
+        if (pos != std::string::npos) {
+            // Parse headers and body
+            std::string headers = output.substr(0, pos);
+            std::string body = output.substr(pos + 4);
+            
+            // Build HTTP response
+            std::ostringstream resp;
+            
+            // Extract Status header if present
+            std::string statusLine = "HTTP/1.0 200 OK\r\n";
+            size_t statusPos = headers.find("Status:");
+            if (statusPos != std::string::npos) {
+                size_t lineEnd = headers.find("\r\n", statusPos);
+                std::string statusHeader = headers.substr(statusPos + 7);
+                if (lineEnd != std::string::npos)
+                    statusHeader = statusHeader.substr(0, lineEnd - (statusPos + 7));
+                statusLine = std::string("HTTP/1.0 ") + statusHeader + "\r\n";
+            }
+            
+            resp << statusLine;
+            
+            // Add other headers
+            std::istringstream hh(headers);
+            std::string line;
+            while (std::getline(hh, line)) {
+                if (!line.empty() && line[line.size()-1] == '\r') line.erase(line.size()-1);
+                if (line.substr(0, 7) != "Status:" && !line.empty()) {
+                    resp << line << "\r\n";
+                }
+            }
+            
+            // Add Content-Length
+            resp << "Content-Length: " << body.size() << "\r\n";
+            resp << "Connection: close\r\n\r\n";
+            resp << body;
+            
+            response = resp.str();
+        } else {
+            response = output;
+        }
+    }
+    
+    // Send response to client
+    queueResponse(client_fd, response);
+    
+    // Clean up
+    if (cgiProc->pid > 0) {
+        _pidToClientFd.erase(cgiProc->pid);
+    }
+    delete cgiProc;
+    _cgiProcesses.erase(client_fd);
+}
 
 

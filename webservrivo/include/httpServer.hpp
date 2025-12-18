@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:37:39 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/11 15:44:52 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 09:01:49 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ struct ServerConfig;
 struct LocationConfig;
 struct MimeTypes;
 struct HttpRequest;
+struct CGIProcess;  // Forward declare CGIProcess
 class HttpResponseBuilder;
 class HandleErrors;
 
@@ -69,6 +70,11 @@ class Server
         };
         
         std::map<int, ClientState> _clients;
+        
+        // Track CGI processes by client_fd
+        std::map<int, CGIProcess*> _cgiProcesses;
+        std::map<pid_t, int> _pidToClientFd;  // Map PID to client_fd for cleanup
+        
         static const int CLIENT_IDLE_TIMEOUT_SEC = 60;
         static const int CLIENT_TOTAL_TIMEOUT_SEC = 300;
 
@@ -80,6 +86,16 @@ class Server
         void queueResponse(int client_fd, const std::string &response);
         void handlePollOut(size_t index);
         void closeClient(size_t index);
+        
+        // Helper methods for handleClientData refactoring
+        bool selectServerForClient(int client_fd, const ClientState &state);
+        bool validateAndParseRequest(int client_fd, ClientState &state, HttpRequest &req, const ServerConfig *serverConf);
+        bool handleSpecialMethods(int client_fd, const HttpRequest &req, const ServerConfig *serverConf, const LocationConfig *locationConf);
+        
+        // CGI management
+        void handleCGICompletion();
+        void pollCGIProcesses();
+        void finalizeCGI(int client_fd, CGIProcess *cgiProc);
 
 
     public:
