@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 15:50:40 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 17:33:26 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,7 +155,10 @@ void Server::handleMultipartUpload(const HttpRequest &req, const std::string &ra
         return;
 
     std::string boundary = contentType.substr(pos + 9);
-    std::string body = rawRequest.substr(rawRequest.find("\r\n\r\n") + 4);
+    size_t bodyStart = rawRequest.find("\r\n\r\n");
+    if (bodyStart == std::string::npos)
+        return;
+    std::string body = rawRequest.substr(bodyStart + 4);
     std::string delimiter = "--" + boundary;
 
     std::vector<std::string> parts = ftSplit(body, delimiter);
@@ -341,7 +344,7 @@ bool Server::validateAndParseRequest(int client_fd, ClientState &state, HttpRequ
 }
 
 // Handle DELETE and POST (multipart) requests
-bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const ServerConfig *serverConf, const LocationConfig *locationConf)
+bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const ServerConfig *serverConf, const LocationConfig *locationConf, const std::string &rawRequest)
 {
     if (req.method == "POST") {
         std::string contentType = req.headers.count("Content-Type") ? req.headers.at("Content-Type") : "";
@@ -388,8 +391,7 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
             }
 
             // Call the multipart handler
-            std::string rawReq = "";  // Store request for multipart parsing
-            handleMultipartUpload(req, rawReq, uploadDir, client_fd);
+            handleMultipartUpload(req, rawRequest, uploadDir, client_fd);
 
             // Send HTTP 303 redirect
             std::ostringstream response;
@@ -572,7 +574,7 @@ void Server::handleClientData(size_t index)
     }
 
     // Handle special methods (POST multipart, DELETE)
-    if (handleSpecialMethods(client_fd, req, serverConf, locationConf))
+    if (handleSpecialMethods(client_fd, req, serverConf, locationConf, state.readBuffer))
         return;
 
     // Handle normal GET requests (and other methods)

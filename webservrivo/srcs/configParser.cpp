@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   configParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/17 18:14:06 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/18 17:54:21 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -253,28 +253,17 @@ void ConfigParser::eraseClosingBraces(std::string &s)
 
 void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
 {    
-    std::stringstream buffer;
-    buffer << input.rdbuf();
-    std::string content = buffer.str();
-    
-    std::string tmp = content;
-    formalizeSpaces(tmp);
-    eraseClosingBraces(tmp);
-    findMissingSemicolon(tmp);
-
-    std::istringstream parser(content);
     std::string token;
     
-    while (parser >> token)
+    while (input >> token)
     {
-       
         if (token == "}") 
             break;
 
         if (token == "listen")
         {
             std::string addr;
-            std::getline(parser, addr, ';');
+            std::getline(input, addr, ';');
 
             size_t start = addr.find_first_not_of(" \t");
             size_t end   = addr.find_last_not_of(" \t");
@@ -295,7 +284,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "server_name")
         {
             std::string line;
-            std::getline(parser, line, ';');
+            std::getline(input, line, ';');
             std::stringstream ss(line);
             std::string name;
 
@@ -305,7 +294,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "root")
         {
             std::string value;
-            std::getline(parser, value, ';');
+            std::getline(input, value, ';');
             size_t start = value.find_first_not_of(" \t");
             size_t end   = value.find_last_not_of(" \t");
             if (start != std::string::npos) value = value.substr(start, end - start + 1);
@@ -314,7 +303,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "index")
         {
             std::string line;
-            std::getline(parser, line, ';');
+            std::getline(input, line, ';');
             std::stringstream ss(line);
             std::string file;
 
@@ -324,7 +313,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "client_max_body_size")
         {
             std::string value;
-            std::getline(parser, value, ';');
+            std::getline(input, value, ';');
             size_t start = value.find_first_not_of(" \t");
             size_t end   = value.find_last_not_of(" \t");
             if (start != std::string::npos) value = value.substr(start, end - start + 1);
@@ -340,7 +329,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "error_page")
         {
             std::string line;
-            std::getline(parser, line, ';');
+            std::getline(input, line, ';');
             std::stringstream ss(line);
             std::string codeStr, path;
             ss >> codeStr >> path;
@@ -350,11 +339,11 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
         else if (token == "location")
         {
             LocationConfig loc;
-            parser >> loc.path;
+            input >> loc.path;
             std::string brace;
-            parser >> brace;
+            input >> brace;
             if (brace != "{") throw std::runtime_error("Expected '{' after location path");
-            parseLocationBlock(parser, loc);
+            parseLocationBlock(input, loc);
             server.locations.push_back(loc);
         }
         else throw std::runtime_error("Unknown directive in server block: " + token);
@@ -375,6 +364,18 @@ void ConfigParser::parseHttpBlock(std::istream &input, HttpConfig &httpConfig)
             input >> brace;
             if (brace != "{") throw std::runtime_error("Expected '{' after server");
             parseServerBlock(input, server);
+            
+            // Check for duplicate (host, port) combinations
+            for (size_t i = 0; i < httpConfig.servers.size(); ++i) {
+                if (httpConfig.servers[i].host == server.host &&
+                    httpConfig.servers[i].listenPort == server.listenPort) {
+                    std::ostringstream oss;
+                    oss << "Error: Duplicate server on " << server.host << ":" << server.listenPort 
+                        << " (each server must have unique host:port)";
+                    throw std::runtime_error(oss.str());
+                }
+            }
+            
             httpConfig.servers.push_back(server);
         }
         else throw std::runtime_error("Unknown directive inside http block: " + token);
@@ -383,6 +384,12 @@ void ConfigParser::parseHttpBlock(std::istream &input, HttpConfig &httpConfig)
 
 HttpConfig ConfigParser::parse()
 {
+    // Validate syntax before parsing
+    std::string tmp = _fileContent;
+    formalizeSpaces(tmp);
+    eraseClosingBraces(tmp);
+    findMissingSemicolon(tmp);
+    
     HttpConfig httpConfig;
     std::istringstream config(_fileContent);
     std::string token;

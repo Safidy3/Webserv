@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:37:39 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 09:01:49 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 17:33:26 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ class Server
         // Helper methods for handleClientData refactoring
         bool selectServerForClient(int client_fd, const ClientState &state);
         bool validateAndParseRequest(int client_fd, ClientState &state, HttpRequest &req, const ServerConfig *serverConf);
-        bool handleSpecialMethods(int client_fd, const HttpRequest &req, const ServerConfig *serverConf, const LocationConfig *locationConf);
+        bool handleSpecialMethods(int client_fd, const HttpRequest &req, const ServerConfig *serverConf, const LocationConfig *locationConf, const std::string &rawRequest);
         
         // CGI management
         void handleCGICompletion();
