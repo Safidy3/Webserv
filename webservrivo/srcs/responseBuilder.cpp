@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 09:49:22 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 14:58:18 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -270,8 +270,13 @@ std::string HttpResponseBuilder::buildResponse(
                     }
                 }
                 //* Handle files
-                else if (S_ISREG(st.st_mode) && access(filePath.c_str(), R_OK) == 0)
+                else if (S_ISREG(st.st_mode))
                 {
+                    // Check read permission
+                    if (access(filePath.c_str(), R_OK) != 0) {
+                        return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
+                    }
+                    
                     // Normal file
                     body = ftReadFile(filePath);
                     std::string contentType = getMimeType(filePath);
