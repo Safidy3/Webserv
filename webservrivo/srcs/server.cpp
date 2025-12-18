@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 09:16:20 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 09:43:52 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -656,15 +656,15 @@ void Server::run()
             if (st.lastActivity != 0 && now - st.lastActivity > CLIENT_IDLE_TIMEOUT_SEC) {
                 std::cout << "Closing idle client " << fd << " after " << (now - st.lastActivity) << "s\n";
                 std::string resp = HandleErrors::generateErrorResponse(408, defaultServerConf, NULL);
-                send(fd, resp.c_str(), resp.size(), 0);
-                closeClient(i);
+                queueResponse(fd, resp);
+                _closeAfterSend[fd] = true;
                 continue;
             }
             if (st.createdAt != 0 && now - st.createdAt > CLIENT_TOTAL_TIMEOUT_SEC) {
                 std::cout << "Closing client " << fd << " due to total timeout\n";
                 std::string resp = HandleErrors::generateErrorResponse(408, defaultServerConf, NULL);
-                send(fd, resp.c_str(), resp.size(), 0);
-                closeClient(i);
+                queueResponse(fd, resp);
+                _closeAfterSend[fd] = true;
                 continue;
             }
         }
@@ -779,6 +779,7 @@ void Server::pollCGIProcesses()
         // Check timeout
         if (elapsed > cgiProc->timeoutMs) {
             std::cerr << "CGI timeout for client " << client_fd << " (pid " << cgiProc->pid << ")\n";
+            cgiProc->timedOut = true;
             kill(cgiProc->pid, SIGKILL);
             completedClients.push_back(client_fd);
             continue;
@@ -823,13 +824,23 @@ void Server::finalizeCGI(int client_fd, CGIProcess *cgiProc)
     if (cgiProc->pipe_out >= 0) close(cgiProc->pipe_out);
     if (cgiProc->pipe_err >= 0) close(cgiProc->pipe_err);
     
+    // Get the server configuration for this client
+    const ServerConfig *serverConf = _clientToServer[client_fd];
+    if (!serverConf) {
+        // Fallback to first server if somehow not found
+        serverConf = &_config.servers[0];
+    }
+    
     std::string response;
     
+    // Check if CGI timed out
+    if (cgiProc->timedOut) {
+        response = HandleErrors::generateErrorResponse(408, *serverConf, NULL);
+    }
     // Check for errors
-    if (!cgiProc->error.empty()) {
+    else if (!cgiProc->error.empty()) {
         std::cerr << "CGI stderr: " << cgiProc->error << "\n";
-        ServerConfig defaultConf;
-        response = HandleErrors::generateErrorResponse(500, defaultConf, NULL);
+        response = HandleErrors::generateErrorResponse(500, *serverConf, NULL);
     } else {
         // Process CGI output
         std::string &output = cgiProc->output;

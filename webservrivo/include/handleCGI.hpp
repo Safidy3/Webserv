@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:47:11 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 08:08:10 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 09:33:01 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,9 +35,10 @@ struct CGIProcess {
     bool err_eof;
     time_t startTime;
     int timeoutMs;
+    bool timedOut;
     
     CGIProcess() : pid(-1), pipe_out(-1), pipe_err(-1), output(), error(), 
-                   out_eof(false), err_eof(false), startTime(0), timeoutMs(10000) {}
+                   out_eof(false), err_eof(false), startTime(0), timeoutMs(10000), timedOut(false) {}
 };
 
 class HandleCGI

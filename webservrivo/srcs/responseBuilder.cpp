@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/16 14:36:07 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 09:49:22 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -272,9 +272,7 @@ std::string HttpResponseBuilder::buildResponse(
                 //* Handle files
                 else if (S_ISREG(st.st_mode) && access(filePath.c_str(), R_OK) == 0)
                 {
-                    std::cout << "dsjkfhsjkdhfksflhjsdlfjlsdfljslflsflj@@@@@@@@W\n";
-
-                    // Fichier normal
+                    // Normal file
                     body = ftReadFile(filePath);
                     std::string contentType = getMimeType(filePath);
                     if (contentType.find("text/") == 0 || contentType == "application/json")

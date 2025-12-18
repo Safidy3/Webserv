@@ -20,6 +20,7 @@ std::map<int, std::string> HandleErrors::initReasonMap() {
     reasons[403] = "Forbidden";
     reasons[404] = "Not Found";
     reasons[405] = "Method Not Allowed";
+    reasons[408] = "Request Timeout";
     reasons[413] = "Payload Too Large";
     reasons[500] = "Internal Server Error";
     reasons[501] = "Not Implemented";
@@ -98,7 +99,7 @@ std::string HandleErrors::generateErrorResponse(
 
     // Build HTTP response
     std::ostringstream oss;
-    oss << "HTTP/1.0 " << code << " " << reason << "\r\n";
+    oss << "HTTP/1.1 " << code << " " << reason << "\r\n";
     oss << "Content-Type: text/html\r\n";
     if (!extraHeaders.empty())
         oss << extraHeaders;
