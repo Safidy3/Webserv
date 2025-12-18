@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 09:43:52 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 15:50:40 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -452,6 +452,11 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
         }
 
         if (S_ISDIR(st.st_mode)) {
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
+            return true;
+        }
+
+        if (access(canonTarget.c_str(), W_OK) != 0) {
             queueResponse(client_fd, HandleErrors::generateErrorResponse(403, *serverConf, locationConf));
             return true;
         }

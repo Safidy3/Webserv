@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 14:58:18 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 15:49:30 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <limits.h>
+#include <iostream>
 
 HttpResponseBuilder::HttpResponseBuilder(const MimeTypes &types)
         : _mimeTypes(types) {}
@@ -107,6 +108,11 @@ std::string HttpResponseBuilder::buildResponse(
                 return HandleErrors::generateErrorResponse(404, serverConf, &locationConf);
 
             if (S_ISDIR(st.st_mode))
+                return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
+
+            int writeAccess = access(filePath.c_str(), W_OK);
+            std::cerr << "DELETE: checking access for " << filePath << " = " << writeAccess << std::endl;
+            if (writeAccess != 0)
                 return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
 
             if (unlink(filePath.c_str()) != 0)
