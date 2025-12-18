@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 17:33:26 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/18 18:39:52 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,9 @@ void Server::setupListeningSockets()
 {
     // Group servers by (host, port) to create ONE socket per endpoint
     std::map<std::pair<std::string, int>, std::vector<size_t> > serversByEndpoint;
-    for (size_t i = 0; i < _config.servers.size(); ++i) {
+    for (size_t i = 0; i < _config.servers.size(); ++i)
+    {
+        std::cout << "ip = " << _config.servers[i].host << std::endl << std::endl;
         std::pair<std::string, int> endpoint(_config.servers[i].host, _config.servers[i].listenPort);
         serversByEndpoint[endpoint].push_back(i);
     }

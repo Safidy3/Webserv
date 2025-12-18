@@ -133,9 +133,10 @@ T=10s+ : envoie réponse Client 1
 RÉSULTAT : Client 2 servi en 2ms malgré Client 1 qui dure 10s !
 
 ⚡ Résumé des techniques non-bloquantes CGI
-Opération	Technique	Bénéfice
-fork()	Création processus parallèle	Parent ne bloque pas
-poll(fds, ..., timeout)	Attendre plusieurs events avec timeout	Parent ne lit que si données prêtes
-read(fd, buf, 4096)	Lecture non-bloquante	Retour immédiat, même si 0 bytes
-waitpid(..., WNOHANG)	Récupérer status sans attendre	Parent sait si enfant fini, sans bloquer
+Opération	                Technique	Bénéfice
+fork()	                    Création processus parallèle	            Parent ne bloque pas
+poll(fds, ..., timeout)	    Attendre plusieurs events avec timeout	    Parent ne lit que si données prêtes
+read(fd, buf, 4096)	        Lecture non-bloquante	                    Retour immédiat, même si 0 bytes
+waitpid(..., WNOHANG)	    Récupérer status sans attendre	            Parent sait si enfant fini, sans bloquer
+
 Résultat : ✅ Serveur traite plein de clients pendant que CGI s'exécute en arrière-plan !
