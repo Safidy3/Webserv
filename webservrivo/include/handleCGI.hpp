@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:47:11 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 09:33:01 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/19 15:50:13 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,10 +57,9 @@ class HandleCGI
         void printEnv() const;
         void buildEnv();
         std::vector<std::string> buildEnvStrings() const;
-        std::string execute();
         
-        // Asynchrone version - starts CGI without waiting
-        CGIProcess* executeAsync();
+        // Asynchronous version - starts CGI without waiting
+        CGIProcess* execute();
         
         // Helper to read from CGI pipes
         static std::string readCGIOutput(CGIProcess *cgiProc);

@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 15:07:58 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/19 15:50:13 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -600,7 +600,7 @@ void Server::handleClientData(size_t index)
         // Don't execute CGI synchronously - queue it for async handling
         HandleCGI cgi(req, *serverConf, locCopy);
         cgi.buildEnv();
-        CGIProcess *cgiProc = cgi.executeAsync();
+        CGIProcess *cgiProc = cgi.execute();
         
         if (cgiProc && cgiProc->pid > 0) {
             // Store the CGI process for tracking

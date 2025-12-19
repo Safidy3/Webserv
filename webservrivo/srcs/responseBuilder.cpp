@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 15:49:30 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/19 15:38:21 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,44 +141,16 @@ std::string HttpResponseBuilder::buildResponse(
         }
 
         // =====================================================
-        // 🔹 GESTION CGI
+        // 🔹 GESTION CGI - Handled asynchronously by Server
         // =====================================================
+        // NOTE: CGI requests are now handled ONLY asynchronously by the Server class
+        // in server.cpp via handleClientData() and pollCGIProcesses()
+        // responseBuilder.cpp should NEVER receive a CGI request
         std::string cgiScript;
         if (isCgiRequest(req, locationConf, cgiScript))
         {
-            HandleCGI cgi(req, serverConf, locationConf);
-            cgi.buildEnv();
-            std::string cgiOutput;
-            try {
-                cgiOutput = cgi.execute();
-            } catch (const CgiTimeout &e) {
-                return HandleErrors::generateErrorResponse(408, serverConf, &locationConf);
-            } catch (const std::exception &e) {
-                return HandleErrors::generateErrorResponse(500, serverConf, &locationConf);
-            }
-
-
-            size_t pos = cgiOutput.find("\r\n\r\n");
-            if (pos != std::string::npos) {
-                headers = cgiOutput.substr(0, pos);
-                body = cgiOutput.substr(pos + 4);
-
-                size_t clPos = headers.find("Content-Length:");
-                if (clPos != std::string::npos) {
-                    size_t end = headers.find("\r\n", clPos);
-                    headers.erase(clPos, end - clPos + 2);
-                }
-
-                headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
-
-                std::string parsed = parseCGIStatusFromHeaders(headers);
-                if (!parsed.empty())
-                    statusLine = parsed;
-            } else {
-                headers = "Content-Type: text/html; charset=UTF-8\r\n";
-                body = cgiOutput;
-                headers += "Content-Length: " + ftToString(body.size()) + "\r\n";
-            }
+            // This should not happen - Server checks isCgiRequest() first
+            return HandleErrors::generateErrorResponse(500, serverConf, &locationConf);
         }
         else
         {
