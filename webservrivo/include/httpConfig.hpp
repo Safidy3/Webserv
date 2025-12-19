@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   httpConfig.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 13:30:58 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/17 18:13:51 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/19 13:11:08 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,6 +86,12 @@ class ConfigParser
         void findMissingSemicolon(const std::string &text);
         void checkBraces(const std::string &text);
         void eraseClosingBraces(std::string &s);
+        
+        // Validation functions
+        bool isValidPortNumber(const std::string &portStr);
+        bool isValidHostname(const std::string &hostname);
+        bool isValidBodySize(const std::string &sizeStr);
+        bool isValidIPAddress(const std::string &ip);
 
     public:
         ConfigParser(const std::string &_configFilePath, const std::string &mimeTypesPath);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/18 18:39:52 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/19 09:01:13 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <errno.h>
 #include "../include/utils.hpp"
 #include <fcntl.h>
+#include <arpa/inet.h>
 
 Server::Server(const HttpConfig &config, MimeTypes &types)
     : _config(config), _mimeTypes(types)
@@ -42,7 +43,6 @@ void Server::setupListeningSockets()
     std::map<std::pair<std::string, int>, std::vector<size_t> > serversByEndpoint;
     for (size_t i = 0; i < _config.servers.size(); ++i)
     {
-        std::cout << "ip = " << _config.servers[i].host << std::endl << std::endl;
         std::pair<std::string, int> endpoint(_config.servers[i].host, _config.servers[i].listenPort);
         serversByEndpoint[endpoint].push_back(i);
     }
@@ -64,11 +64,18 @@ void Server::setupListeningSockets()
 
         sockaddr_in addr;
         addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = htons(endpoint.second);
+        
+        // Validate and convert IP address
+        int inet_result = inet_pton(AF_INET, endpoint.first.c_str(), &addr.sin_addr);
+        if (inet_result <= 0) {
+            std::cerr << "Error: Invalid IP address '" << endpoint.first << "' (errno=" << errno << ")\n";
+            close(sock);
+            continue;
+        }
 
         if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == -1) {
-            std::cerr << "Error: bind failed on port " << endpoint.second
+            std::cerr << "Error: bind failed on " << endpoint.first << ":" << endpoint.second
                       << " (errno=" << errno << ") " << strerror(errno) << "\n";
             close(sock);
             continue;
