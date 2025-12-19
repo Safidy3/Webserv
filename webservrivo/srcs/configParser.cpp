@@ -92,6 +92,9 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
             std::stringstream ss(value);
             std::string method;
             while (ss >> method) loc.methods.push_back(method);
+            for (size_t i = 0; i < loc.methods.size(); ++i)
+                if (loc.methods[i] != "GET" && loc.methods[i] != "POST" && loc.methods[i] != "DELETE")
+                    throw ConfigError("Invalid method in location block: " + loc.methods[i]);
         }
         else if (token == "autoindex")
             loc.autoindex = (value == "on");
@@ -133,7 +136,8 @@ void ConfigParser::parseLocationBlock(std::istream &input, LocationConfig &loc)
         else if (token == "default_file") loc.defaultFile = value;
         else if (token == "cgi_extension") loc.cgiExtension = value;
         else if (token == "cgi_path") loc.cgiPath = value;
-        else loc.directives[token] = value;
+        // else loc.directives[token] = value;
+        else throw std::runtime_error("Unknown directive in location block: " + token);
     }
 }
 

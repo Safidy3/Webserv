@@ -64,5 +64,19 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+run: all
+	@clear
+	@./$(NAME)
+
+runre: re
+	@./$(NAME)
+
+debug: all
+	@clear
+	@valgrind --track-origins=yes --leak-check=full ./$(NAME)
+
+# debug: all
+# 	@valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME)
+
+.PHONY: all clean fclean re run runre debug watch compress
 
