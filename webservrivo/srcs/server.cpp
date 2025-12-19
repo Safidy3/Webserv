@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 09:01:13 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/19 14:48:07 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -630,11 +630,15 @@ void Server::run()
 {
     ServerConfig defaultServerConf;
 
-    while (true)
+    extern volatile sig_atomic_t g_stop;
+
+    while (!g_stop)
     {
         int poll_count = poll(_fds.data(), _fds.size(), 1000);
         if (poll_count == -1)
         {
+            if (errno == EINTR)
+                continue;
             std::cerr << "Error: poll failed\n";
             break;
         }
