@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 14:48:07 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/19 15:07:58 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <cstring>
 #include "../include/utils.hpp"
 #include <fcntl.h>
 #include <arpa/inet.h>
@@ -823,7 +824,13 @@ void Server::pollCGIProcesses()
                 // Mark as completed
                 completedClients.push_back(client_fd);
             } else if (result < 0) {
-                std::cerr << "waitpid error for CGI process\n";
+                // ECHILD means process was already reaped by SIGCHLD handler (SIG_IGN)
+                // This is normal with signal(SIGCHLD, SIG_IGN) - just mark as completed
+                if (errno == ECHILD) {
+                    std::cout << "CGI process " << cgiProc->pid << " already reaped (normal)\n";
+                } else {
+                    std::cerr << "waitpid error for CGI process: " << strerror(errno) << "\n";
+                }
                 completedClients.push_back(client_fd);
             }
         }
