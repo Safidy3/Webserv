@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 15:50:13 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/21 15:58:26 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ void Server::setupListeningSockets()
         std::pair<std::string, int> endpoint(_config.servers[i].host, _config.servers[i].listenPort);
         serversByEndpoint[endpoint].push_back(i);
     }
-    
+
     // For each unique endpoint, create a socket and add all servers to it
     for (std::map<std::pair<std::string, int>, std::vector<size_t> >::iterator it = serversByEndpoint.begin();
          it != serversByEndpoint.end(); ++it) {
@@ -136,7 +136,7 @@ void Server::handleNewConnection(size_t index)
         if (_listenSockets.count(_fds[index].fd)) {
             // We don't select the server now
             // handleClientData() will do it based on Host: header
-            _clientToServer[client_sock] = NULL;  // To be determined later
+            _clientToVirtualServer[client_sock] = NULL;  // To be determined later
             _clientToListenSocket[client_sock] = _fds[index].fd;  // Store listen fd
             std::cout << "New client " << client_sock 
                       << " connected (server selection pending Host: header)\n";
@@ -284,7 +284,7 @@ bool Server::selectServerForClient(int client_fd, const ClientState &state)
 
     if (!selectedServer) return false;
 
-    _clientToServer[client_fd] = selectedServer;
+    _clientToVirtualServer[client_fd] = selectedServer;
     return true;
 }
 
@@ -503,8 +503,6 @@ void Server::handleClientData(size_t index)
         return;
     }
 
-    // std::cout << "Received " << received << " bytes from client " << client_fd << "\n";
-
     ClientState &state = _clients[client_fd];
     state.readBuffer.append(buffer, received);
     state.lastActivity = time(NULL);
@@ -518,22 +516,22 @@ void Server::handleClientData(size_t index)
                            : 0;
         state.receivedBody = bodyBytes;
 
-        const ServerConfig* serverConfTmp = _clientToServer[client_fd];
+        const ServerConfig* serverConfTmp = _clientToVirtualServer[client_fd];
         size_t maxBody = serverConfTmp ? serverConfTmp->clientMaxBodySize : 0;
 
         if (maxBody > 0 && state.receivedBody > maxBody) {
-            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToServer[client_fd], NULL));
+            queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *_clientToVirtualServer[client_fd], NULL));
             return;
         }
     }
 
     // Select the appropriate server for this client
-    if (!_clientToServer[client_fd]) {
+    if (!_clientToVirtualServer[client_fd]) {
         if (!selectServerForClient(client_fd, state))
             return;
     }
 
-    const ServerConfig *serverConf = _clientToServer[client_fd];
+    const ServerConfig *serverConf = _clientToVirtualServer[client_fd];
     if (!serverConf) return;
 
     // Parse the HTTP request
@@ -574,12 +572,11 @@ void Server::handleClientData(size_t index)
         allowed.insert(locationConf->methods.begin(), locationConf->methods.end());
     }
 
-    if (req.method.empty()) {
+    if (req.method.empty() || (req.method != "GET" && req.method != "POST" && req.method != "DELETE")) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(400, *serverConf, locationConf));
         return;
     }
-
-    if (allowed.find(req.method) == allowed.end()) {
+    else if (allowed.find(req.method) == allowed.end()) {
         std::string allowHeader;
         if (!allowed.empty()) {
             allowHeader = "Allow: ";
@@ -656,7 +653,6 @@ void Server::run()
             break;
         }
 
-        // Poll and process ongoing CGI processes
         pollCGIProcesses();
 
         for (int k = static_cast<int>(_fds.size()) - 1; k >= 0; --k)
@@ -766,7 +762,7 @@ void Server::closeClient(size_t index)
     for (std::vector<int>::iterator it = _clientSockets.begin(); it != _clientSockets.end(); ++it) {
         if (*it == fd) { _clientSockets.erase(it); break; }
     }
-    _clientToServer.erase(fd);
+    _clientToVirtualServer.erase(fd);
     _clientToListenSocket.erase(fd);
     _clients.erase(fd);
     _sendBuffers.erase(fd);
@@ -864,7 +860,7 @@ void Server::finalizeCGI(int client_fd, CGIProcess *cgiProc)
     if (cgiProc->pipe_err >= 0) close(cgiProc->pipe_err);
     
     // Get the server configuration for this client
-    const ServerConfig *serverConf = _clientToServer[client_fd];
+    const ServerConfig *serverConf = _clientToVirtualServer[client_fd];
     if (!serverConf) {
         // Fallback to first server if somehow not found
         serverConf = &_config.servers[0];

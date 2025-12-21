@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   appendToCSV.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/21 15:01:44 by rhanitra          #+#    #+#             */
+/*   Updated: 2025/12/21 15:01:47 by rhanitra         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../include/utils.hpp"
 #include <iostream>
 #include <fcntl.h>
@@ -5,7 +17,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// Helper utilities at file scope (compatible with C++98)
 static std::string sanitizeString(const std::string &s)
 {
     std::string out;
@@ -28,25 +39,18 @@ static std::string getFieldValue(const std::map<std::string, std::string> &field
     return std::string();
 }
 
-// Write CSV line using O_APPEND and flock to reduce race conditions
-void appendToCSV(const std::map<std::string, std::string> &fields,
-                 const std::string &csvPath,
-                 const std::string &filename)
+void appendToCSV(const std::map<std::string, std::string> &fields, const std::string &csvPath, const std::string &filename)
 {
-    // Open file descriptor with append/create mode and permissions 0644
     int fd = open(csvPath.c_str(), O_WRONLY | O_APPEND | O_CREAT, 0644);
     if (fd < 0) {
         std::cerr << "appendToCSV: impossible d'ouvrir le fichier " << csvPath << " errno=" << errno << "\n";
         return;
     }
 
-    // Acquire an exclusive lock while we potentially write header + line
     if (flock(fd, LOCK_EX) != 0) {
         std::cerr << "appendToCSV: flock failed errno=" << errno << "\n";
-        // proceed without lock if flock not supported, but keep fd
     }
 
-    // Check if file is empty (size == 0) to write header once
     struct stat st;
     bool empty = false;
     if (fstat(fd, &st) == 0) {
@@ -66,7 +70,6 @@ void appendToCSV(const std::map<std::string, std::string> &fields,
     line += sanitizeString(filename);
     line += "\n";
 
-    // Write atomically using write(2) on the FD opened with O_APPEND
     const char *buf = line.c_str();
     ssize_t toWrite = static_cast<ssize_t>(line.size());
     ssize_t written = 0;
@@ -79,7 +82,6 @@ void appendToCSV(const std::map<std::string, std::string> &fields,
         written += w;
     }
 
-    // Unlock and close
     flock(fd, LOCK_UN);
     close(fd);
 }

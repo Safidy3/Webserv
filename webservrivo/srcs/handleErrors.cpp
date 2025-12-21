@@ -34,12 +34,10 @@ std::string HandleErrors::getDefaultReason(int code) {
     return "Unknown Error";
 }
 
-std::string HandleErrors::getErrorBodyFromFile(
-    const std::string &filePath, int code, const std::string &reason
-) {
+std::string HandleErrors::getErrorBodyFromFile(const std::string &filePath, int code, const std::string &reason) {
     std::ifstream file(filePath.c_str());
     if (!file.is_open()) {
-        // Fallback -> default page
+
         std::ostringstream oss;
         oss << "<html><head><title>" << code << " " << reason 
             << "</title></head><body><h1>" 
@@ -53,21 +51,15 @@ std::string HandleErrors::getErrorBodyFromFile(
     return buffer.str();
 }
 
-std::string HandleErrors::generateErrorResponse(
-    int code,
-    const ServerConfig& serverConf,
-    const LocationConfig* locationConf,
-    const std::string& extraHeaders)
+std::string HandleErrors::generateErrorResponse(int code, const ServerConfig& serverConf, const LocationConfig* locationConf, const std::string& extraHeaders)
 {
-    (void)locationConf; // Avoid unused parameter warning
+    (void)locationConf;
 
-    // Initialize default messages
     static std::map<int, std::string> reasons = initReasonMap();
     std::string reason = "Unknown Error";
     if (reasons.find(code) != reasons.end())
         reason = reasons[code];
 
-    // Search for error_page in ServerConfig
     std::map<int,std::string>::const_iterator it = serverConf.errorPages.find(code);
     std::string body;
 
@@ -87,7 +79,6 @@ std::string HandleErrors::generateErrorResponse(
         }
     }
 
-    // Fallback if no file or error not found
     if (body.empty()) {
         std::ostringstream ss;
         ss << "<html><head><title>" << code << " " << reason 
@@ -96,7 +87,6 @@ std::string HandleErrors::generateErrorResponse(
         body = ss.str();
     }
 
-    // Build HTTP response
     std::ostringstream oss;
     oss << "HTTP/1.1 " << code << " " << reason << "\r\n";
     oss << "Content-Type: text/html\r\n";

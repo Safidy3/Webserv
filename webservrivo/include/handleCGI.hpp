@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   handleCGI.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:47:11 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 15:50:13 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/21 13:22:50 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
-// Structure pour tracker un CGI en cours
 struct CGIProcess {
     pid_t pid;
     int pipe_out;
@@ -38,8 +37,10 @@ struct CGIProcess {
     bool timedOut;
     
     CGIProcess() : pid(-1), pipe_out(-1), pipe_err(-1), output(), error(), 
-                   out_eof(false), err_eof(false), startTime(0), timeoutMs(10000), timedOut(false) {}
+                   out_eof(false), err_eof(false), startTime(0), timeoutMs(CGI_TIMOUT), timedOut(false) {}
 };
+
+
 
 class HandleCGI
 {
@@ -58,10 +59,8 @@ class HandleCGI
         void buildEnv();
         std::vector<std::string> buildEnvStrings() const;
         
-        // Asynchronous version - starts CGI without waiting
         CGIProcess* execute();
         
-        // Helper to read from CGI pipes
         static std::string readCGIOutput(CGIProcess *cgiProc);
 };
 

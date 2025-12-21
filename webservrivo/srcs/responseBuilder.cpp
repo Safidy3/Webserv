@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 15:38:21 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/21 15:17:19 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,9 +98,7 @@ std::string HttpResponseBuilder::buildResponse(
 
     try
     {
-        // =====================================================
-        // 🔹 GESTION DE LA MÉTHODE DELETE
-        // =====================================================
+
         if (req.method == "DELETE") {
             std::string filePath = resolveFilePath(req, serverConf, locationConf);
             struct stat st;
@@ -125,9 +123,7 @@ std::string HttpResponseBuilder::buildResponse(
             return response;
         }
 
-        // =====================================================
-        // 🔹 GESTION REDIRECT
-        // =====================================================
+
         if (!locationConf.returnPath.empty() && locationConf.returnCode >= 300 && locationConf.returnCode < 400)
         {
             std::ostringstream resp;
@@ -140,23 +136,13 @@ std::string HttpResponseBuilder::buildResponse(
             return resp.str();
         }
 
-        // =====================================================
-        // 🔹 GESTION CGI - Handled asynchronously by Server
-        // =====================================================
-        // NOTE: CGI requests are now handled ONLY asynchronously by the Server class
-        // in server.cpp via handleClientData() and pollCGIProcesses()
-        // responseBuilder.cpp should NEVER receive a CGI request
         std::string cgiScript;
         if (isCgiRequest(req, locationConf, cgiScript))
         {
-            // This should not happen - Server checks isCgiRequest() first
             return HandleErrors::generateErrorResponse(500, serverConf, &locationConf);
         }
         else
         {
-            // =====================================================
-            // 🔹 GESTION FICHIERS STATIQUES ET DOSSIERS
-            // =====================================================
             std::string root = !locationConf.root.empty() ? locationConf.root : serverConf.root;
 
             std::string relativePath;
@@ -172,8 +158,6 @@ std::string HttpResponseBuilder::buildResponse(
                     relativePath = locationConf.indexFiles[0];
                 else if (!serverConf.indexFiles.empty())
                     relativePath = serverConf.indexFiles[0];
-                else
-                    relativePath = "index.html";
             }
 
             std::string filePath = root + "/" + relativePath;
@@ -188,12 +172,10 @@ std::string HttpResponseBuilder::buildResponse(
 
             if (file_exists(filePath))
             {
-                //* Handle directories
                 if (S_ISDIR(st.st_mode))
                 {
                     bool indexFound = false;
                     
-                    //* Find index file in locationConf
                     for (size_t i = 0; i < locationConf.indexFiles.size(); ++i)
                     {
                         std::string idxPath = filePath + "/" + locationConf.indexFiles[i];
@@ -211,7 +193,6 @@ std::string HttpResponseBuilder::buildResponse(
                         }
                     }
     
-                    //* Find if index file is in serverConf
                     if (!indexFound)
                     {
                         for (size_t i = 0; i < serverConf.indexFiles.size(); ++i)
@@ -232,7 +213,6 @@ std::string HttpResponseBuilder::buildResponse(
                         }
                     }
     
-                    // Aucun index trouvé
                     if (!indexFound)
                     {
                         if (locationConf.autoindex)
@@ -247,15 +227,14 @@ std::string HttpResponseBuilder::buildResponse(
                         }
                     }
                 }
-                //* Handle files
+                
                 else if (S_ISREG(st.st_mode))
                 {
-                    // Check read permission
+
                     if (access(filePath.c_str(), R_OK) != 0) {
                         return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
                     }
                     
-                    // Normal file
                     body = ftReadFile(filePath);
                     std::string contentType = getMimeType(filePath);
                     if (contentType.find("text/") == 0 || contentType == "application/json")

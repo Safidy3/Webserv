@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   httpConfig.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 13:30:58 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 13:11:08 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/21 15:29:29 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ struct LocationConfig
     std::string returnPath;
     std::string cgiExtension;
     std::string cgiPath;
-    // per-location CGI timeout in seconds. 0 means use server default (10s here)
+    
     int cgiTimeoutSeconds;
     std::string uploadDir;
     std::string defaultFile;
@@ -52,13 +52,13 @@ struct LocationConfig
 
 struct ServerConfig
 {
-    std::string host;
-    int listenPort;
-    std::vector<std::string> serverNames;
-    std::string root;
-    std::vector<std::string> indexFiles;
-    size_t clientMaxBodySize;
-    std::map<int,std::string> errorPages;
+    std::string                 host;
+    int                         listenPort;
+    std::vector<std::string>    serverNames;
+    std::string                 root;
+    std::vector<std::string>    indexFiles;
+    size_t                      clientMaxBodySize;
+    std::map<int,std::string>   errorPages;
     std::vector<LocationConfig> locations;
 
     ServerConfig() : listenPort(0), clientMaxBodySize(0) {}
@@ -75,7 +75,7 @@ class ConfigParser
         std::string _configFilePath;
         std::string _mimeTypesPath;
         std::string _fileContent;
-        // MimeTypes &_mineTypes;
+
         
         
         void expectToken(std::istream &input, const std::string &expected);
@@ -86,8 +86,7 @@ class ConfigParser
         void findMissingSemicolon(const std::string &text);
         void checkBraces(const std::string &text);
         void eraseClosingBraces(std::string &s);
-        
-        // Validation functions
+
         bool isValidPortNumber(const std::string &portStr);
         bool isValidHostname(const std::string &hostname);
         bool isValidBodySize(const std::string &sizeStr);

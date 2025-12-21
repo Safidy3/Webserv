@@ -6,7 +6,7 @@
 /*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:12:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/09/11 17:12:21 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/21 14:44:19 by rhanitra         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,26 +23,23 @@
 
 struct HttpRequest
 {
-    // Request line
     std::string method;
     std::string uri;
+    std::string httpVersion;
     std::string queryString;
     std::string fragment;
-    std::string httpVersion;
-
-    // Headers
+    
     std::map<std::string, std::string> headers;
     std::string host;
     int port;
 
-    // Body
     std::string body;
     size_t contentLength;
     std::string boundary;
 
     std::string resolvedPath;
 
-    HttpRequest() : port(80), contentLength(0) {}
+    HttpRequest() : port(0), contentLength(0) {}
 };
 
 class HttpRequestParser

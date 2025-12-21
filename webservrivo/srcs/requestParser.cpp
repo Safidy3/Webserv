@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   requestParser.cpp                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/21 15:14:41 by rhanitra          #+#    #+#             */
+/*   Updated: 2025/12/21 15:15:30 by rhanitra         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../include/httpRequest.hpp"
 
 HttpRequestParser::HttpRequestParser() {}
@@ -11,13 +23,11 @@ HttpRequest HttpRequestParser::parseRequest(const std::string &rawRequest)
     std::istringstream stream(rawRequest);
     std::string line;
 
-    // 1. Parse request line
     if (!std::getline(stream, line) || line.empty())
         throw std::runtime_error("Invalid HTTP request: missing request line");
     if (line[line.size() - 1] == '\r') line.erase(line.size() - 1); // remove \r
     parseRequestLine(line, request);
 
-    // 2. Parse headers
     std::vector<std::string> headerLines;
     while (std::getline(stream, line) && line != "\r" && !line.empty())
     {
@@ -27,7 +37,6 @@ HttpRequest HttpRequestParser::parseRequest(const std::string &rawRequest)
     }
     parseHeaders(headerLines, request);
 
-    // 3. Parse body (everything after headers)
     std::string body;
     if (std::getline(stream, body, '\0'))
         parseBody(body, request);
@@ -107,6 +116,5 @@ void HttpRequestParser::parseHostHeader(const std::string &hostHeader, HttpReque
     else
     {
         request.host = hostHeader;
-        request.port = 80;
     }
 }

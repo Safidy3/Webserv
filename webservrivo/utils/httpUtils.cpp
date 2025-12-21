@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   httpUtils.cpp                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/21 15:03:20 by rhanitra          #+#    #+#             */
+/*   Updated: 2025/12/21 15:04:35 by rhanitra         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../include/utils.hpp"
 #include <sstream>
 #include <sys/stat.h>
@@ -37,7 +49,6 @@ bool isPathInsideRoot(const std::string &root, const std::string &target, std::s
     if (realpath(target.c_str(), targetBuf)) {
         outCanonicalTarget = std::string(targetBuf);
     } else {
-        // target may not exist yet; build path by concatenating
         outCanonicalTarget = canonRoot + normalizeRelativePath(target);
     }
     return outCanonicalTarget.find(canonRoot) == 0;
@@ -54,31 +65,28 @@ std::string dechunkBody(const std::string &chunkedBody)
     std::string out;
     size_t pos = 0;
     while (pos < chunkedBody.size()) {
-        // find line with chunk size
         size_t lineEnd = chunkedBody.find("\r\n", pos);
         if (lineEnd == std::string::npos) return std::string();
         std::string sizeLine = chunkedBody.substr(pos, lineEnd - pos);
-        // chunk size may contain extensions after ';'
         size_t semi = sizeLine.find(';');
         std::string sizeHex = (semi == std::string::npos) ? sizeLine : sizeLine.substr(0, semi);
-        // parse hex
         unsigned long chunkSize = strtoul(sizeHex.c_str(), NULL, 16);
         pos = lineEnd + 2;
+        
         if (chunkSize == 0) {
-            // consume trailing CRLF after zero chunk and optional trailers
-            // look for double CRLF marking end of chunks
             size_t endPos = chunkedBody.find("\r\n\r\n", pos);
             if (endPos == std::string::npos) {
-                // maybe just CRLF
+
                 if (pos + 2 <= chunkedBody.size()) return out;
                 return std::string();
             }
-            return out; // finished
+            return out;
         }
+        
         if (pos + chunkSize > chunkedBody.size()) return std::string();
         out.append(chunkedBody.data() + pos, chunkSize);
         pos += chunkSize;
-        // next must be CRLF
+
         if (pos + 2 > chunkedBody.size()) return std::string();
         if (chunkedBody[pos] != '\r' || chunkedBody[pos+1] != '\n') return std::string();
         pos += 2;
@@ -107,20 +115,17 @@ std::string resolveFilePath(const HttpRequest &req, const ServerConfig &serverCo
     std::string root = !locationConf.root.empty() ? locationConf.root : serverConf.root;
     std::string uri = req.uri;
 
-    // Retirer la partie du chemin correspondant à la location
     std::string relativePath;
     if (!locationConf.path.empty() && uri.find(locationConf.path) == 0)
         relativePath = uri.substr(locationConf.path.size());
     else
         relativePath = uri;
 
-    // Nettoyer les / superflus
     if (!relativePath.empty() && relativePath[0] == '/')
         relativePath.erase(0, 1);
 
     std::string filePath = root + "/" + relativePath;
 
-    // Supprimer les // doublons au cas où
     while (filePath.find("//") != std::string::npos)
         filePath.replace(filePath.find("//"), 2, "/");
 
