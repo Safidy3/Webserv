@@ -172,7 +172,10 @@ CGIProcess* HandleCGI::execute()
             while (toWrite > 0) {
                 ssize_t w = write(pipe_in[1], data, toWrite);
                 if (w < 0) {
-                    if (errno == EINTR) continue;
+                    perror("write failed");
+                    break;
+                }
+                else if (w == 0) {
                     break;
                 }
                 toWrite -= w;
@@ -213,8 +216,6 @@ std::string HandleCGI::readCGIOutput(CGIProcess *cgiProc)
             cgiProc->output.append(buffer, n);
         } else if (n == 0) {
             cgiProc->out_eof = true;
-        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // No data available right now
         } else {
             cgiProc->out_eof = true;
         }
@@ -227,8 +228,6 @@ std::string HandleCGI::readCGIOutput(CGIProcess *cgiProc)
             cgiProc->error.append(buffer, n);
         } else if (n == 0) {
             cgiProc->err_eof = true;
-        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // No data available right now
         } else {
             cgiProc->err_eof = true;
         }

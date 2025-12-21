@@ -18,7 +18,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <cstring>
 #include "../include/utils.hpp"
 #include <fcntl.h>
@@ -70,21 +69,19 @@ void Server::setupListeningSockets()
         // Validate and convert IP address
         int inet_result = inet_pton(AF_INET, endpoint.first.c_str(), &addr.sin_addr);
         if (inet_result <= 0) {
-            std::cerr << "Error: Invalid IP address '" << endpoint.first << "' (errno=" << errno << ")\n";
+            std::cerr << "Error: Invalid IP address '" << endpoint.first << ")\n";
             close(sock);
             continue;
         }
 
         if (bind(sock, (sockaddr*)&addr, sizeof(addr)) == -1) {
-            std::cerr << "Error: bind failed on " << endpoint.first << ":" << endpoint.second
-                      << " (errno=" << errno << ") " << strerror(errno) << "\n";
+            std::cerr << "Error: bind failed on " << endpoint.first << ":" << endpoint.second << "\n";
             close(sock);
             continue;
         }
 
         if (listen(sock, MAX_PENDING_QUEUE) == -1) {
-            std::cerr << "Error: listen failed on port " << endpoint.second
-                      << " (errno=" << errno << ") " << strerror(errno) << "\n";
+            std::cerr << "Error: listen failed on port " << endpoint.second << "\n";
             close(sock);
             continue;
         }
@@ -112,7 +109,7 @@ void Server::handleNewConnection(size_t index)
     socklen_t addrlen = sizeof(client_addr);
     int client_sock = accept(_fds[index].fd, (sockaddr*)&client_addr, &addrlen);
     if (client_sock == -1) {
-        std::cerr << "Error: accept failed (errno=" << errno << ")\n";
+        std::cerr << "Error: accept failed\n";
         return;
     }
     // Set client socket to non-blocking
@@ -395,7 +392,7 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
                         accum += part;
                         if (stat(accum.c_str(), &st) == -1) {
                             if (mkdir(accum.c_str(), 0755) == -1 && errno != EEXIST) {
-                                std::cerr << "Failed to create upload dir: " << accum << " errno=" << errno << "\n";
+                                std::cerr << "Failed to create upload dir: " << accum << "\n";
                                 break;
                             }
                         }
@@ -414,7 +411,10 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
             response << "Content-Length: 0\r\n";
             response << "Connection: close\r\n\r\n";
 
-            send(client_fd, response.str().c_str(), response.str().size(), 0);
+            ssize_t n = send(client_fd, response.str().c_str(), response.str().size(), 0);
+            if (n <= 0) {
+                closeClient(client_fd);
+            }
             return true;
         }
     }
@@ -647,8 +647,7 @@ void Server::run()
         int poll_count = poll(_fds.data(), _fds.size(), 1000);
         if (poll_count == -1)
         {
-            if (errno == EINTR)
-                continue;
+            continue;
             std::cerr << "Error: poll failed\n";
             break;
         }
@@ -729,9 +728,8 @@ void Server::handlePollOut(size_t index)
     const char *data = buf.c_str();
     size_t toSend = buf.size();
     ssize_t n = ::send(fd, data, toSend, 0);
+    // cannot send now or fatal -> close client (server uses poll to retry) update activity? close
     if (n <= 0) {
-        // cannot send now or fatal -> close client (server uses poll to retry)
-        // update activity? close
         closeClient(index);
         return;
     }
@@ -832,13 +830,6 @@ void Server::pollCGIProcesses()
                 // Mark as completed
                 completedClients.push_back(client_fd);
             } else if (result < 0) {
-                // ECHILD means process was already reaped by SIGCHLD handler (SIG_IGN)
-                // This is normal with signal(SIGCHLD, SIG_IGN) - just mark as completed
-                if (errno == ECHILD) {
-                    std::cout << "CGI process " << cgiProc->pid << " already reaped (normal)\n";
-                } else {
-                    std::cerr << "waitpid error for CGI process: " << strerror(errno) << "\n";
-                }
                 completedClients.push_back(client_fd);
             }
         }

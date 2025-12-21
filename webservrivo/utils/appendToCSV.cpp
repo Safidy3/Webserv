@@ -43,12 +43,12 @@ void appendToCSV(const std::map<std::string, std::string> &fields, const std::st
 {
     int fd = open(csvPath.c_str(), O_WRONLY | O_APPEND | O_CREAT, 0644);
     if (fd < 0) {
-        std::cerr << "appendToCSV: impossible d'ouvrir le fichier " << csvPath << " errno=" << errno << "\n";
+        std::cerr << "appendToCSV: impossible d'ouvrir le fichier " << csvPath << "\n";
         return;
     }
 
     if (flock(fd, LOCK_EX) != 0) {
-        std::cerr << "appendToCSV: flock failed errno=" << errno << "\n";
+        std::cerr << "appendToCSV: flock failed.\n";
     }
 
     struct stat st;

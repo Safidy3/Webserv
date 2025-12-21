@@ -319,16 +319,6 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
             if (start != std::string::npos) value = value.substr(start, end - start + 1);
                 server.root = value;
         }
-        else if (token == "index")
-        {
-            std::string line;
-            std::getline(input, line, ';');
-            std::stringstream ss(line);
-            std::string file;
-
-            while (ss >> file) 
-                server.indexFiles.push_back(file);
-        }
         else if (token == "client_max_body_size")
         {
             std::string value;
@@ -347,7 +337,6 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
             else if (unit == 'G' || unit == 'g') multiplier = 1024*1024*1024, value.resize(value.size() - 1);
 
             server.clientMaxBodySize = ftToInt(value) * multiplier;
-            std::cout << "Set client_max_body_size to : " << server.clientMaxBodySize << " bytes\n";
         }
         else if (token == "error_page")
         {
