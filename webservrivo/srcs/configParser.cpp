@@ -347,6 +347,7 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
             else if (unit == 'G' || unit == 'g') multiplier = 1024*1024*1024, value.resize(value.size() - 1);
 
             server.clientMaxBodySize = ftToInt(value) * multiplier;
+            std::cout << "Set client_max_body_size to : " << server.clientMaxBodySize << " bytes\n";
         }
         else if (token == "error_page")
         {
@@ -442,6 +443,14 @@ HttpConfig ConfigParser::parse()
             errMsg += ftToString(httpConfig.servers[i].listenPort);
             errMsg += " found in configuration";
             throw std::runtime_error(errMsg);
+        }
+    }
+    // Validate: check that each server block has a listen directive
+    for (size_t i = 0; i < httpConfig.servers.size(); ++i)
+    {
+        if (httpConfig.servers[i].listenPort == 0)
+        {
+            throw std::runtime_error("Error: Server block missing required 'listen' directive");
         }
     }
 

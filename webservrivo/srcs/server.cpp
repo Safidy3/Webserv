@@ -557,10 +557,16 @@ void Server::handleClientData(size_t index)
         locationConf = &serverConf->locations[0];
 
     // Check client max body size
+
+    std::cout << "Client Max Body Size: " << serverConf->clientMaxBodySize << "\n";
+    std::cout << "Request Content Length: " << req.contentLength << "\n";
+
     if (checkClientMaxBodySize(req.contentLength, serverConf->clientMaxBodySize)) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
         return;
     }
+
+    std::cout << "\n\n*****************\n\n";
 
     // Check allowed HTTP methods
     std::set<std::string> allowed;
