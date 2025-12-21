@@ -73,10 +73,14 @@ runre: re
 
 debug: all
 	@clear
-	@valgrind --track-origins=yes --leak-check=full ./$(NAME)
+	@valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all --track-fds=yes ./$(NAME)
 
 # debug: all
 # 	@valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME)
 
 .PHONY: all clean fclean re run runre debug watch compress
+
+
+maxBody:
+	curl -X POST -d @background2.jpg http://localhost:8080
 

@@ -303,10 +303,14 @@ bool Server::validateAndParseRequest(int client_fd, ClientState &state, HttpRequ
         contentLen = static_cast<size_t>(atoi(val.c_str()));
     }
 
+    // std::cout << state.readBuffer.size() << "\n";
+    // std::cout << "Content-Length: " << contentLen << "\n";
+
     if (contentLenPos != std::string::npos) {
         size_t bodyLen = state.readBuffer.size() - (hdrEnd + 4);
         if (bodyLen < contentLen) return false;  // Wait for more data
     }
+
 
     // Handle chunked encoding if necessary
     bool isChunked = false;
@@ -498,6 +502,8 @@ void Server::handleClientData(size_t index)
         if (received < 0) closeClient(index);
         return;
     }
+
+    // std::cout << "Received " << received << " bytes from client " << client_fd << "\n";
 
     ClientState &state = _clients[client_fd];
     state.readBuffer.append(buffer, received);

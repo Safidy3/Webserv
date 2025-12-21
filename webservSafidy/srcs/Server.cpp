@@ -233,6 +233,14 @@ const LocationConfig_t*	Server::getLocationsConfigFromURI(const std::string& uri
 	return NULL;
 }
 
+const std::string	Server::getLocationRoot(const std::string& path) const
+{
+	const LocationConfig_t* location = getLocationsConfigFromURI(path);
+	if (!location)
+		return "";
+	return location->root;
+}
+
 const std::string	Server::getLocationValidIndex(const std::string& locationPath) const
 {
 	if (isUriValidFile(locationPath))
