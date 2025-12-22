@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/11 17:25:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/21 15:58:26 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/22 11:35:15 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,27 +120,23 @@ void Server::handleNewConnection(size_t index)
     client_pfd.events = POLLIN;
     client_pfd.revents = 0;
     _fds.push_back(client_pfd);
-        _clientSockets.push_back(client_sock);
-    // Initialize client parsing state
-        _clients[client_sock] = ClientState();
-        time_t now = time(NULL);
-        _clients[client_sock].lastActivity = now;
-        _clients[client_sock].createdAt = now;
+    _clientSockets.push_back(client_sock);
 
-        // Store the listening socket to select the server later
-        // We will store the listening fd index in a temporary map
-        // to retrieve the list of possible servers
-        if (_listenSockets.count(_fds[index].fd)) {
-            // We don't select the server now
-            // handleClientData() will do it based on Host: header
-            _clientToVirtualServer[client_sock] = NULL;  // To be determined later
-            _clientToListenSocket[client_sock] = _fds[index].fd;  // Store listen fd
-            std::cout << "New client " << client_sock 
-                      << " connected (server selection pending Host: header)\n";
-        } else {
-            std::cerr << "Error: listening socket " << _fds[index].fd 
-                      << " not found in _listenSockets!" << std::endl;
-        }
+    _clients[client_sock] = ClientState();
+    time_t now = time(NULL);
+    _clients[client_sock].lastActivity = now;
+    _clients[client_sock].createdAt = now;
+
+    // Store the listening socket to select the possible server
+    if (_listenSockets.count(_fds[index].fd)) {
+        _clientToVirtualServer[client_sock] = NULL;
+        _clientToListenSocket[client_sock] = _fds[index].fd;
+        std::cout << "New client " << client_sock 
+                    << " connected (server selection pending Host: header)\n";
+    } else {
+        std::cerr << "Error: listening socket " << _fds[index].fd 
+                    << " not found in _listenSockets!" << std::endl;
+    }
 }
 
 
@@ -187,7 +183,6 @@ void Server::handleMultipartUpload(const HttpRequest &req, const std::string &ra
         }
     }
 
-    // Ajout du fichier CSV
     appendToCSV(fields, uploadDir + "/contacts.csv", uploadedFilename);
 
     std::string response =
@@ -240,7 +235,6 @@ void Server::saveUploadedFile(const std::string &uploadDir,
     out.close();
 }
 
-// Select the appropriate server for a client based on Host header
 bool Server::selectServerForClient(int client_fd, const ClientState &state)
 {
     if (_clientToListenSocket.count(client_fd) == 0)
@@ -285,10 +279,8 @@ bool Server::selectServerForClient(int client_fd, const ClientState &state)
     return true;
 }
 
-// Validate body size and parse the HTTP request
 bool Server::validateAndParseRequest(int client_fd, ClientState &state, HttpRequest &req, const ServerConfig *serverConf)
 {
-    // Check if complete body is received (Content-Length or chunked)
     size_t hdrEnd = state.readBuffer.find("\r\n\r\n");
     size_t contentLen = 0;
     size_t contentLenPos = state.readBuffer.find("Content-Length:");
@@ -300,16 +292,12 @@ bool Server::validateAndParseRequest(int client_fd, ClientState &state, HttpRequ
         contentLen = static_cast<size_t>(atoi(val.c_str()));
     }
 
-    // std::cout << state.readBuffer.size() << "\n";
-    // std::cout << "Content-Length: " << contentLen << "\n";
-
     if (contentLenPos != std::string::npos) {
         size_t bodyLen = state.readBuffer.size() - (hdrEnd + 4);
-        if (bodyLen < contentLen) return false;  // Wait for more data
+        if (bodyLen < contentLen)
+            return false; 
     }
 
-
-    // Handle chunked encoding if necessary
     bool isChunked = false;
     size_t tePos = state.readBuffer.find("Transfer-Encoding:");
     if (tePos != std::string::npos) {
@@ -320,7 +308,8 @@ bool Server::validateAndParseRequest(int client_fd, ClientState &state, HttpRequ
 
     if (isChunked) {
         size_t zeroChunkPos = state.readBuffer.find("\r\n0\r\n", hdrEnd + 4);
-        if (zeroChunkPos == std::string::npos) return false;  // Wait for more data
+        if (zeroChunkPos == std::string::npos)
+            return false;
         std::string chunkedBody = state.readBuffer.substr(hdrEnd + 4);
         std::string dechunked = dechunkBody(chunkedBody);
         if (dechunked.empty() && !chunkedBody.empty()) {
@@ -337,7 +326,6 @@ bool Server::validateAndParseRequest(int client_fd, ClientState &state, HttpRequ
         state.readBuffer = headers + dechunked;
     }
 
-    // Parse the request
     HttpRequestParser parser;
     try {
         req = parser.parseRequest(state.readBuffer);
@@ -360,7 +348,7 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
     if (req.method == "POST") {
         std::string contentType = req.headers.count("Content-Type") ? req.headers.at("Content-Type") : "";
         if (contentType.find("multipart/form-data") != std::string::npos) {
-            // Determine upload root
+  
             std::string uploadRoot;
             if (locationConf && !locationConf->uploadDir.empty())
                 uploadRoot = locationConf->uploadDir;
@@ -374,7 +362,6 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
                 uploadDir += "/";
             uploadDir += "uploads";
 
-            // Create uploads directory if needed
             struct stat st;
             if (stat(uploadDir.c_str(), &st) == -1) {
                 std::string accum;
@@ -401,10 +388,8 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
                 }
             }
 
-            // Call the multipart handler
             handleMultipartUpload(req, rawRequest, uploadDir, client_fd);
 
-            // Send HTTP 303 redirect
             std::ostringstream response;
             response << "HTTP/1.0 303 See Other\r\n";
             response << "Location: /uploads\r\n";
@@ -489,7 +474,7 @@ bool Server::handleSpecialMethods(int client_fd, const HttpRequest &req, const S
         return true;
     }
 
-    return false;  // Not a special method
+    return false;
 }
 
 void Server::handleClientData(size_t index)
@@ -507,7 +492,6 @@ void Server::handleClientData(size_t index)
     state.readBuffer.append(buffer, received);
     state.lastActivity = time(NULL);
 
-    // Check body size before parsing
     size_t hdrEnd = state.readBuffer.find("\r\n\r\n");
     if (hdrEnd != std::string::npos) {
         size_t bodyStart = hdrEnd + 4;
@@ -525,7 +509,6 @@ void Server::handleClientData(size_t index)
         }
     }
 
-    // Select the appropriate server for this client
     if (!_clientToVirtualServer[client_fd]) {
         if (!selectServerForClient(client_fd, state))
             return;
@@ -534,12 +517,10 @@ void Server::handleClientData(size_t index)
     const ServerConfig *serverConf = _clientToVirtualServer[client_fd];
     if (!serverConf) return;
 
-    // Parse the HTTP request
     HttpRequest req;
     if (!validateAndParseRequest(client_fd, state, req, serverConf))
         return;
 
-    // Find the best matching location
     const LocationConfig* locationConf = NULL;
     size_t bestMatchLen = 0;
     for (size_t i = 0; i < serverConf->locations.size(); ++i) {
@@ -550,23 +531,17 @@ void Server::handleClientData(size_t index)
         }
     }
 
-    // Fallback if no specific location found
     if (!locationConf && !serverConf->locations.empty())
         locationConf = &serverConf->locations[0];
 
-    // Check client max body size
-
-    std::cout << "Client Max Body Size: " << serverConf->clientMaxBodySize << "\n";
-    std::cout << "Request Content Length: " << req.contentLength << "\n";
+    // std::cout << "Client Max Body Size: " << serverConf->clientMaxBodySize << "\n";
+    // std::cout << "Request Content Length: " << req.contentLength << "\n";
 
     if (checkClientMaxBodySize(req.contentLength, serverConf->clientMaxBodySize)) {
         queueResponse(client_fd, HandleErrors::generateErrorResponse(413, *serverConf, locationConf));
         return;
     }
 
-    std::cout << "\n\n*****************\n\n";
-
-    // Check allowed HTTP methods
     std::set<std::string> allowed;
     if (locationConf && !locationConf->methods.empty()) {
         allowed.insert(locationConf->methods.begin(), locationConf->methods.end());
@@ -592,31 +567,27 @@ void Server::handleClientData(size_t index)
         return;
     }
 
-    // Handle special methods (POST multipart, DELETE)
+
     if (handleSpecialMethods(client_fd, req, serverConf, locationConf, state.readBuffer))
         return;
 
-    // Handle normal GET requests (and other methods)
     HttpResponseBuilder builder(_mimeTypes);
     
-    // Check if this is a CGI request - handle asynchronously
+
     std::string cgiScript;
     if (locationConf && isCgiRequest(req, *locationConf, cgiScript))
     {
-        // Create a copy of locationConf to ensure stability across async handling
         LocationConfig locCopy = *locationConf;
         
-        // Don't execute CGI synchronously - queue it for async handling
         HandleCGI cgi(req, *serverConf, locCopy);
         cgi.buildEnv();
         CGIProcess *cgiProc = cgi.execute();
         
         if (cgiProc && cgiProc->pid > 0) {
-            // Store the CGI process for tracking
             _cgiProcesses[client_fd] = cgiProc;
             _pidToClientFd[cgiProc->pid] = client_fd;
             std::cout << "Started async CGI process " << cgiProc->pid << " for client " << client_fd << "\n";
-            return;  // Don't send response yet, it will be sent when CGI finishes
+            return; 
         } else {
             std::string response = HandleErrors::generateErrorResponse(500, *serverConf, locationConf);
             queueResponse(client_fd, response);
@@ -624,7 +595,6 @@ void Server::handleClientData(size_t index)
         }
     }
     
-    // Non-CGI requests handled synchronously
     std::string response;
     try {
         response = builder.buildResponse(req, *serverConf, locationConf ? *locationConf : LocationConfig());
@@ -720,7 +690,6 @@ void Server::handlePollOut(size_t index)
 {
     int fd = _fds[index].fd;
     if (_sendBuffers.find(fd) == _sendBuffers.end()) {
-        // nothing to send, disable POLLOUT
         _fds[index].events &= ~POLLOUT;
         return;
     }
@@ -728,13 +697,12 @@ void Server::handlePollOut(size_t index)
     const char *data = buf.c_str();
     size_t toSend = buf.size();
     ssize_t n = ::send(fd, data, toSend, 0);
-    // cannot send now or fatal -> close client (server uses poll to retry) update activity? close
+
     if (n <= 0) {
         closeClient(index);
         return;
     }
     if ((size_t)n >= buf.size()) {
-        // all sent
         _sendBuffers.erase(fd);
         _fds[index].events &= ~POLLOUT;
         if (_closeAfterSend[fd]) {
@@ -742,12 +710,10 @@ void Server::handlePollOut(size_t index)
             closeClient(index);
         }
     } else {
-        // partial sent, remove sent portion
         buf.erase(0, n);
-        // update activity timestamp on successful send
+
         if (_clients.find(fd) != _clients.end())
             _clients[fd].lastActivity = time(NULL);
-        // keep POLLOUT to continue sending on next poll
     }
 }
 
@@ -756,7 +722,7 @@ void Server::closeClient(size_t index)
     if (index >= _fds.size()) return;
     int fd = _fds[index].fd;
     ::close(fd);
-    // remove from client sockets vector if present
+
     for (std::vector<int>::iterator it = _clientSockets.begin(); it != _clientSockets.end(); ++it) {
         if (*it == fd) { _clientSockets.erase(it); break; }
     }
@@ -765,7 +731,6 @@ void Server::closeClient(size_t index)
     _clients.erase(fd);
     _sendBuffers.erase(fd);
     _closeAfterSend.erase(fd);
-    // remove the pollfd entry
     _fds.erase(_fds.begin() + index);
 }
 
@@ -779,7 +744,7 @@ void Server::cleanup()
     }
 
     std::cout << "Closing listening sockets...\n";
-    // Closing listening sockets
+
     for (size_t i = 0; i < _fds.size(); ++i)
         ::close(_fds[i].fd);
     _fds.clear();
@@ -788,7 +753,6 @@ void Server::cleanup()
     std::cout << "Server cleanup done.\n";
 }
 
-// Poll CGI processes to check if they've completed
 void Server::pollCGIProcesses()
 {
     std::vector<int> completedClients;
@@ -802,8 +766,7 @@ void Server::pollCGIProcesses()
         
         time_t now = time(NULL);
         long elapsed = (now - cgiProc->startTime) * 1000;
-        
-        // Check timeout
+
         if (elapsed > cgiProc->timeoutMs) {
             std::cerr << "CGI timeout for client " << client_fd << " (pid " << cgiProc->pid << ")\n";
             cgiProc->timedOut = true;
@@ -812,22 +775,17 @@ void Server::pollCGIProcesses()
             continue;
         }
         
-        // Try to read available data
         HandleCGI::readCGIOutput(cgiProc);
         
-        // Check if process is still running
         if (cgiProc->pid > 0) {
             int status = 0;
             pid_t result = waitpid(cgiProc->pid, &status, WNOHANG);
             
             if (result == cgiProc->pid) {
-                // Process has finished
                 std::cout << "CGI process " << cgiProc->pid << " finished for client " << client_fd << "\n";
                 
-                // Try to read any remaining data
                 HandleCGI::readCGIOutput(cgiProc);
                 
-                // Mark as completed
                 completedClients.push_back(client_fd);
             } else if (result < 0) {
                 completedClients.push_back(client_fd);
@@ -835,51 +793,39 @@ void Server::pollCGIProcesses()
         }
     }
     
-    // Process completed CGI requests
     for (size_t i = 0; i < completedClients.size(); ++i) {
         finalizeCGI(completedClients[i], _cgiProcesses[completedClients[i]]);
     }
 }
 
-// Finalize CGI: send response to client
 void Server::finalizeCGI(int client_fd, CGIProcess *cgiProc)
 {
     if (!cgiProc) return;
     
-    // Close pipes
     if (cgiProc->pipe_out >= 0) close(cgiProc->pipe_out);
     if (cgiProc->pipe_err >= 0) close(cgiProc->pipe_err);
     
-    // Get the server configuration for this client
     const ServerConfig *serverConf = _clientToVirtualServer[client_fd];
     if (!serverConf) {
-        // Fallback to first server if somehow not found
         serverConf = &_config.servers[0];
     }
     
     std::string response;
     
-    // Check if CGI timed out
     if (cgiProc->timedOut) {
         response = HandleErrors::generateErrorResponse(408, *serverConf, NULL);
-    }
-    // Check for errors
-    else if (!cgiProc->error.empty()) {
+    } else if (!cgiProc->error.empty()) {
         std::cerr << "CGI stderr: " << cgiProc->error << "\n";
         response = HandleErrors::generateErrorResponse(500, *serverConf, NULL);
     } else {
-        // Process CGI output
         std::string &output = cgiProc->output;
         size_t pos = output.find("\r\n\r\n");
         if (pos != std::string::npos) {
-            // Parse headers and body
             std::string headers = output.substr(0, pos);
             std::string body = output.substr(pos + 4);
             
-            // Build HTTP response
             std::ostringstream resp;
             
-            // Extract Status header if present
             std::string statusLine = "HTTP/1.0 200 OK\r\n";
             size_t statusPos = headers.find("Status:");
             if (statusPos != std::string::npos) {
@@ -892,7 +838,6 @@ void Server::finalizeCGI(int client_fd, CGIProcess *cgiProc)
             
             resp << statusLine;
             
-            // Add other headers
             std::istringstream hh(headers);
             std::string line;
             while (std::getline(hh, line)) {
@@ -901,8 +846,7 @@ void Server::finalizeCGI(int client_fd, CGIProcess *cgiProc)
                     resp << line << "\r\n";
                 }
             }
-            
-            // Add Content-Length
+
             resp << "Content-Length: " << body.size() << "\r\n";
             resp << "Connection: close\r\n\r\n";
             resp << body;
@@ -913,10 +857,8 @@ void Server::finalizeCGI(int client_fd, CGIProcess *cgiProc)
         }
     }
     
-    // Send response to client
     queueResponse(client_fd, response);
     
-    // Clean up
     if (cgiProc->pid > 0) {
         _pidToClientFd.erase(cgiProc->pid);
     }

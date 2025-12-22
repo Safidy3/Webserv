@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:48:25 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 15:50:46 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/22 10:48:35 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,13 +22,6 @@ HandleCGI::HandleCGI(const HttpRequest& req, const ServerConfig& serverConf, con
     : _request(req), _serverConf(serverConf), _locationConf(locationConf) {}
 
 HandleCGI::~HandleCGI() {}
-
-void HandleCGI::printEnv() const {
-    for (std::map<std::string, std::string>::const_iterator it = _env.begin(); it != _env.end(); ++it) {
-        std::cout << it->first << " = " << it->second << std::endl;
-    }
-}
-
 
 void HandleCGI::buildEnv()
 {
@@ -58,7 +51,6 @@ std::vector<std::string> HandleCGI::buildEnvStrings() const
     return envStrings;
 }
 
-// Asynchronous CGI execution - fork without waiting
 CGIProcess* HandleCGI::execute()
 {
     int pipe_out[2];
@@ -70,8 +62,6 @@ CGIProcess* HandleCGI::execute()
         return NULL;
     }
 
-    // Extract string data into C buffers BEFORE fork to avoid heap issues
-    // Note: We access _locationConf and _request BEFORE fork - they're invalid after fork in child
     char cgiPath_buf[512];
     char scriptPath_buf[512];
     char body_buf[4096];
@@ -79,14 +69,12 @@ CGIProcess* HandleCGI::execute()
     int timeout_val = 10000;
     
     {
-        // Copy CGI path
         const char *path = _locationConf.cgiPath.c_str();
         size_t len = _locationConf.cgiPath.length();
         if (len >= sizeof(cgiPath_buf)) len = sizeof(cgiPath_buf) - 1;
         memcpy(cgiPath_buf, path, len);
         cgiPath_buf[len] = '\0';
         
-        // Copy script path (reconstructed)
         std::string fullScriptPath = _locationConf.root + _request.uri.substr(_locationConf.path.size());
         const char *spath = fullScriptPath.c_str();
         size_t slen = fullScriptPath.length();
@@ -94,7 +82,6 @@ CGIProcess* HandleCGI::execute()
         memcpy(scriptPath_buf, spath, slen);
         scriptPath_buf[slen] = '\0';
         
-        // Copy body
         if (!_request.body.empty()) {
             const char *bdata = _request.body.data();
             size_t blen = _request.body.length();
@@ -104,11 +91,9 @@ CGIProcess* HandleCGI::execute()
             body_size = blen;
         }
         
-        // Copy timeout
         timeout_val = _locationConf.cgiTimeoutSeconds > 0 ? (_locationConf.cgiTimeoutSeconds * 1000) : 10000;
     }
     
-    // Build environment BEFORE fork
     buildEnv();
     std::vector<std::string> envStrings = buildEnvStrings();
     bool hasRedirect = false;
@@ -117,7 +102,6 @@ CGIProcess* HandleCGI::execute()
     }
     if (!hasRedirect) envStrings.push_back("REDIRECT_STATUS=200");
 
-    // Create C-style arrays BEFORE fork
     std::vector<char*> envp_data;
     envp_data.reserve(envStrings.size() + 1);
     for (size_t i = 0; i < envStrings.size(); ++i)
@@ -133,7 +117,7 @@ CGIProcess* HandleCGI::execute()
         return NULL;
     }
 
-    if (pid == 0) // child - DO NOT USE any parent member variables here!
+    if (pid == 0)
     {
         close(pipe_out[0]);
         close(pipe_in[1]);
@@ -146,26 +130,22 @@ CGIProcess* HandleCGI::execute()
         close(pipe_err[1]);
         close(pipe_in[0]);
 
-        // Use ONLY the C buffers which are on stack and guaranteed to be valid
         char *argv[3];
         argv[0] = cgiPath_buf;
         argv[1] = scriptPath_buf;
         argv[2] = NULL;
 
-        // Call execve with environment
         execve(argv[0], argv, &envp_data[0]);
         
-        // If execve fails
         perror("execve failed");
         _exit(127);
     }
-    else // parent
+    else
     {
         close(pipe_out[1]);
         close(pipe_err[1]);
         close(pipe_in[0]);
 
-        // Write request body if any
         if (body_size > 0) {
             ssize_t toWrite = body_size;
             const char* data = body_buf;
@@ -202,14 +182,12 @@ CGIProcess* HandleCGI::execute()
     }
 }
 
-// Read available data from CGI process (non-blocking)
 std::string HandleCGI::readCGIOutput(CGIProcess *cgiProc)
 {
     if (!cgiProc) return std::string();
     
     char buffer[4096];
     
-    // Try to read from stdout
     if (!cgiProc->out_eof && cgiProc->pipe_out >= 0) {
         ssize_t n = read(cgiProc->pipe_out, buffer, sizeof(buffer));
         if (n > 0) {
@@ -221,7 +199,6 @@ std::string HandleCGI::readCGIOutput(CGIProcess *cgiProc)
         }
     }
     
-    // Try to read from stderr
     if (!cgiProc->err_eof && cgiProc->pipe_err >= 0) {
         ssize_t n = read(cgiProc->pipe_err, buffer, sizeof(buffer));
         if (n > 0) {

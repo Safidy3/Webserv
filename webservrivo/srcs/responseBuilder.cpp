@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/22 07:50:18 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/22 10:48:15 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,12 +153,9 @@ std::string HttpResponseBuilder::buildResponse(
             else
                 relativePath = req.uri;
 
-            // Build file path: start with root and add relativePath
-            // If we have a location path, we need to include the location directory in the path
             std::string filePath;
             if (!locationConf.path.empty() && req.uri.find(locationConf.path) == 0)
             {
-                // We're accessing a location - construct path based on location
                 if (!relativePath.empty() && relativePath != "/")
                     filePath = root + "/" + locationConf.path + relativePath;
                 else
@@ -166,7 +163,6 @@ std::string HttpResponseBuilder::buildResponse(
             }
             else
             {
-                // No location or different root - use relative path
                 if (!relativePath.empty() && relativePath != "/")
                     filePath = root + "/" + relativePath;
                 else
