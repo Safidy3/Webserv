@@ -13,7 +13,7 @@
 NAME = webserv
 
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g -I $(DIR_UTILS)
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I $(DIR_UTILS)
 RM = rm -rf
 
 DIR_WEBSERV = ./srcs
@@ -73,18 +73,6 @@ runre: re
 
 debug: all
 	@clear
-	@valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all --track-fds=yes ./$(NAME)
+	@valgrind ./$(NAME)
 	
-debugre: re all
-	@clear
-	@valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all --track-fds=yes ./$(NAME)
-
-# debug: all
-# 	@valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(NAME)
-
 .PHONY: all clean fclean re run runre debug watch compress
-
-
-maxBody:
-	curl -X POST -d @background2.jpg http://localhost:8080
-

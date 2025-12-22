@@ -20,30 +20,6 @@
             <li class="nav-item">
                 <a class="nav-link" href="/cgi_bin/Contact.php">CGI Post</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/cgi_bin/index.php">CGI Get</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/delete/delete.html">DELETE</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/private/index.html">403</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/notFound.html">404</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/405/405.html">405</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/cgi_bin/loop.php">408</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/cgi_bin/error.php">500</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/google">Google</a>
-            </li>
       </ul>
       <form class="d-flex" role="search" action="/search" method="GET">
           <input class="form-control me-2" type="search" name="q" placeholder="Search" aria-label="Search"/>
