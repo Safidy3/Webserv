@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   responseBuilder.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rhanitra <rhanitra@student.42antananari    +#+  +:+       +#+        */
+/*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 17:17:28 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/21 15:17:19 by rhanitra         ###   ########.fr       */
+/*   Updated: 2025/12/22 07:50:18 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,14 +153,26 @@ std::string HttpResponseBuilder::buildResponse(
             else
                 relativePath = req.uri;
 
-            if (relativePath.empty() || relativePath == "/") {
-                if (!locationConf.indexFiles.empty())
-                    relativePath = locationConf.indexFiles[0];
-                else if (!serverConf.indexFiles.empty())
-                    relativePath = serverConf.indexFiles[0];
+            // Build file path: start with root and add relativePath
+            // If we have a location path, we need to include the location directory in the path
+            std::string filePath;
+            if (!locationConf.path.empty() && req.uri.find(locationConf.path) == 0)
+            {
+                // We're accessing a location - construct path based on location
+                if (!relativePath.empty() && relativePath != "/")
+                    filePath = root + "/" + locationConf.path + relativePath;
+                else
+                    filePath = root + "/" + locationConf.path;
             }
-
-            std::string filePath = root + "/" + relativePath;
+            else
+            {
+                // No location or different root - use relative path
+                if (!relativePath.empty() && relativePath != "/")
+                    filePath = root + "/" + relativePath;
+                else
+                    filePath = root;
+            }
+                
             struct stat st;
             if (stat(filePath.c_str(), &st) != 0) {
                 std::string uriPath = req.uri;
@@ -223,7 +235,7 @@ std::string HttpResponseBuilder::buildResponse(
                         }
                         else
                         {
-                            return HandleErrors::generateErrorResponse(403, serverConf, &locationConf);
+                            return HandleErrors::generateErrorResponse(404, serverConf, &locationConf);
                         }
                     }
                 }

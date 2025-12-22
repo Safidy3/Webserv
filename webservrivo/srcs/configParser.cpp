@@ -6,7 +6,7 @@
 /*   By: rivoinfo <rivoinfo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/28 14:10:20 by rhanitra          #+#    #+#             */
-/*   Updated: 2025/12/19 13:11:31 by rivoinfo         ###   ########.fr       */
+/*   Updated: 2025/12/22 07:28:44 by rivoinfo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -318,6 +318,16 @@ void ConfigParser::parseServerBlock(std::istream &input, ServerConfig &server)
             size_t end   = value.find_last_not_of(" \t");
             if (start != std::string::npos) value = value.substr(start, end - start + 1);
                 server.root = value;
+        }
+        else if (token == "index")
+        {
+            std::string line;
+            std::getline(input, line, ';');
+            std::stringstream ss(line);
+            std::string file;
+
+            while (ss >> file) 
+                server.indexFiles.push_back(file);
         }
         else if (token == "client_max_body_size")
         {
